@@ -11,14 +11,14 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Golden Buttermilk Scones",
     category: Category.BAKERY_BUCKETS,
     description: "Famous South African high-tea buttery scones. Soft on the inside, golden on the outside. Served plain - perfect with fresh whipped cream, jam, and grated cheddar cheese.",
-    image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&q=80&w=600",
+    image: "https://photos.google.com/photo/AF1QipNif18BfPVhh6WE-ZSivOOrAFM3Kxf8Wdp7WeHI",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
-      "2L": 170,
-      "5L": 350,
-      "10L": 620,
-      "20L": 1150
+      "2L": 70,
+      "5L": 150,
+      "10L": 260,
+      "20L": 470
     },
     approxQuantity: {
       "2L": "10 - 15 mini scones",
@@ -37,10 +37,10 @@ export const MENU_ITEMS: MenuItem[] = [
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
-      "2L": 190,
-      "5L": 380,
-      "10L": 680,
-      "20L": 1250
+      "2L": 85,
+      "5L": 165,
+      "10L": 275,
+      "20L": 485
     },
     approxQuantity: {
       "2L": "10 - 15 mini muffins",
@@ -55,7 +55,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional South African Butter Biscuits",
     category: Category.BAKERY_BUCKETS,
     description: "Rich melt-in-the-mouth pure butter cookies, beautifully piped and decorated with cherries, chocolate drops, or coconut flakes. Ideal for family gatherings and tea time.",
-    image: "https://images.unsplash.com/photo-1558961313-112997a59e41?auto=format&fit=crop&q=80&w=600",
+    image: "https://photos.google.com/album/AF1QipNg2pqJSPQKNvDqygAhqr861Zzgh7-fqcO7HKm7/photo/AF1QipP30x28Diz_Uy3k7MMpGIj19CSZvKxRFS8eBOKc",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -71,6 +71,28 @@ export const MENU_ITEMS: MenuItem[] = [
       "20L": "approx. 400 - 450 bite-size biscuits"
     },
     badge: "Heritage Recipe"
+  },
+  {
+    id: "rusks-bucket",
+    name: "Traditional Handmade Buttermilk Rusks",
+    category: Category.BAKERY_BUCKETS,
+    description: "Traditional chunky South African double-baked buttermilk rusks. Crafted with premium farm-fresh buttermilk and healthy seeds, perfectly crunchy and ready to dunk in warm coffee or tea.",
+    image: "https://photos.google.com/photo/AF1QipNxJs5Q1u4TxYye7S4uH3LgCdcUJXLh-gnp4hQ2",
+    isBucket: true,
+    basePrice: 0,
+    bucketPrices: {
+      "2L": 100,
+      "5L": 250,
+      "10L": 450,
+      "20L": 800
+    },
+    approxQuantity: {
+      "2L": "approx. 15 - 20 dunking rusks",
+      "5L": "approx. 40 - 50 dunking rusks",
+      "10L": "approx. 85 - 100 dunking rusks",
+      "20L": "approx. 175 - 200 dunking rusks"
+    },
+    badge: "Dunking Classic"
   },
   {
     id: "gourmet-macarons",

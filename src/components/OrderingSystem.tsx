@@ -25,6 +25,7 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
     "scones-bucket": "5L",
     "muffins-bucket": "5L",
     "biscuits-bucket": "5L",
+    "rusks-bucket": "5L",
     "gourmet-macarons": "5L", // Uses sizes of macarons
     "koeksisters-deluxe": "5L"
   });
@@ -33,6 +34,7 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
     "scones-bucket": 1,
     "muffins-bucket": 1,
     "biscuits-bucket": 1,
+    "rusks-bucket": 1,
     "gourmet-macarons": 1,
     "koeksisters-deluxe": 1,
     "travel-box": 1,
