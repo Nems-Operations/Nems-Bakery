@@ -77,7 +77,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Handmade Buttermilk Rusks",
     category: Category.BAKERY_BUCKETS,
     description: "Traditional chunky South African double-baked buttermilk rusks. Crafted with premium farm-fresh buttermilk and healthy seeds, perfectly crunchy and ready to dunk in warm coffee or tea.",
-    image: "https://photos.google.com/photo/AF1QipNxJs5Q1u4TxYye7S4uH3LgCdcUJXLh-gnp4hQ2",
+    image: "/src/assets/images/nems_buttermilk_rusks_1780609865484.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
