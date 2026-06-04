@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper to validate the standard order details
+    function isValidOrder(data) {
+      return data.customerName is string && 
+             data.customerName.size() >= 1 && 
+             data.customerName.size() <= 256 &&
+             data.phoneNumber is string && 
+             data.phoneNumber.size() >= 5 && 
+             data.phoneNumber.size() <= 64 &&
+             data.product is string && 
+             data.product.size() >= 1 && 
+             data.product.size() <= 2048 &&
+             data.quantity is int && 
+             data.quantity >= 1 && 
+             data.quantity <= 10000 &&
+             data.totalPrice is number && 
+             data.totalPrice >= 0 &&
+             data.status == "Pending";
+    }
+
+    // Orders match block
+    match /orders/{orderId} {
+      allow create: if isValidOrder(request.resource.data);
+      allow get: if true;
+    }
+  }
+}

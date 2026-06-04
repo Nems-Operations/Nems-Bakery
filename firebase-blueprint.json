@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Bakery and catering order placed by a customer",
+      "type": "object",
+      "properties": {
+        "customerName": {
+          "type": "string",
+          "description": "The full name of the customer placing the order"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "South African contact phone number"
+        },
+        "product": {
+          "type": "string",
+          "description": "Name/description of the product or platter selected"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Number of items or buckets requested"
+        },
+        "totalPrice": {
+          "type": "number",
+          "description": "Total calculated cost in South African Rands (ZAR)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Confirmed", "Completed", "Cancelled"],
+          "description": "Fulfillment status of the order"
+        },
+        "orderDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of order submission"
+        },
+        "deliveryMethod": {
+          "type": "string",
+          "description": "Delivery type: collect or delivery"
+        },
+        "deliveryAddress": {
+          "type": "string",
+          "description": "Physical address in South Africa if delivery is selected"
+        }
+      },
+      "required": ["customerName", "phoneNumber", "product", "quantity", "totalPrice", "status"]
+    }
+  },
+  "firestore": {
+    "orders": {
+      "schema": "Order",
+      "description": "Store bakery order submissions"
+    }
+  }
+}
