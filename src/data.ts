@@ -59,10 +59,10 @@ export const MENU_ITEMS: MenuItem[] = [
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
-      "2L": 220,
-      "5L": 440,
-      "10L": 800,
-      "20L": 1450
+      "2L": 165,
+      "5L": 390,
+      "10L": 750,
+      "20L": 1390
     },
     approxQuantity: {
       "2L": "approx. 40 - 50 bite-size biscuits",
