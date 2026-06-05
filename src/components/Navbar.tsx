@@ -34,17 +34,14 @@ export default function Navbar({
           onClick={() => setActiveSection("hero")}
           className="flex cursor-pointer items-center space-x-3 group"
         >
-          {/* Logo Representation reflecting the shape of the uploaded logo */}
-          <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-gold bg-white shadow-xs transition-transform group-hover:scale-105">
-            {/* Pink and Blue Macarons drawn minimalistically inside a gold ring */}
-            <div className="absolute -top-1 left-2 flex space-x-0.5">
-              {/* Pink Macaron */}
-              <div className="h-4 w-6 rounded-full bg-[#ECA1A6]/90 border border-gold/50 shadow-xs" />
-              {/* Mint Blue Macaron */}
-              <div className="h-4 w-6 rounded-full bg-[#A6E3E9]/90 border border-gold/50 shadow-xs -ml-2 mt-1" />
-            </div>
-            
-            <span className="mt-4 serif text-[11px] font-bold tracking-tight text-gold">Nems</span>
+          {/* Logo image reflecting the original branding */}
+          <div className="relative h-14 w-14 overflow-hidden rounded-full border border-gold bg-white shadow-sm transition-transform group-hover:scale-105">
+            <img 
+              src="/images/logo.png" 
+              alt="Nems Bakery and Catering logo" 
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-contain p-0.5"
+            />
           </div>
           
           <div>

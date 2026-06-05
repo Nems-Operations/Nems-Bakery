@@ -11,7 +11,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Golden Buttermilk Scones",
     category: Category.BAKERY_BUCKETS,
     description: "Famous South African high-tea buttery scones. Soft on the inside, golden on the outside. Served plain - perfect with fresh whipped cream, jam, and grated cheddar cheese.",
-    image: "https://photos.google.com/photo/AF1QipNif18BfPVhh6WE-ZSivOOrAFM3Kxf8Wdp7WeHI",
+    image: "/images/buttermilk_scones.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -30,10 +30,10 @@ export const MENU_ITEMS: MenuItem[] = [
   },
   {
     id: "muffins-bucket",
-    name: "Assorted Sweet Morning Muffins",
+    name: "Gourmet Cappuccino Morning Muffins",
     category: Category.BAKERY_BUCKETS,
-    description: "A freshly baked premium selection of vanilla choc-chip, spiced blueberry, and decadent caramel-infusion mini muffins. Exceptionally moist and fluffy.",
-    image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600",
+    description: "A freshly baked premium selection of moist, fluffy gourmet cappuccino-infused mini muffins, dusted with fine chocolate and real cocoa powder. Pure morning indulgence.",
+    image: "/images/morning_muffins.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -55,7 +55,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional South African Butter Biscuits",
     category: Category.BAKERY_BUCKETS,
     description: "Rich melt-in-the-mouth pure butter cookies, beautifully piped and decorated with cherries, chocolate drops, or coconut flakes. Ideal for family gatherings and tea time.",
-    image: "https://photos.google.com/album/AF1QipNg2pqJSPQKNvDqygAhqr861Zzgh7-fqcO7HKm7/photo/AF1QipP30x28Diz_Uy3k7MMpGIj19CSZvKxRFS8eBOKc",
+    image: "/images/biscuits_assorted.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -77,7 +77,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Handmade Buttermilk Rusks",
     category: Category.BAKERY_BUCKETS,
     description: "Traditional chunky South African double-baked buttermilk rusks. Crafted with premium farm-fresh buttermilk and healthy seeds, perfectly crunchy and ready to dunk in warm coffee or tea.",
-    image: "/src/assets/images/nems_buttermilk_rusks_1780609865484.png",
+    image: "/images/rusks_pack.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -99,7 +99,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Nems Signature Pastel Macarons",
     category: Category.DESSERTS,
     description: "Celebrating our brand logo! Delicate almond macarons filled with Belgian chocolate ganache and strawberry creme. Styled in stunning soft pink and mint-blue with subtle gold leafing.",
-    image: "https://images.unsplash.com/photo-1569864358642-9d1684040f43?auto=format&fit=crop&q=80&w=600",
+    image: "/images/gourmet_macarons.png",
     isBucket: false,
     basePrice: 180, // For 12pcs
     bucketPrices: {
@@ -121,7 +121,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "South African Syrupy Koeksisters",
     category: Category.DESSERTS,
     description: "Traditional South African braided pastries, fried to golden perfection and instantly submerged in ice-cold ginger-and-cinnamon spiced syrup. Crispy outside, syrupy explosion inside.",
-    image: "https://images.unsplash.com/photo-1508737027454-e6454ef45afd?auto=format&fit=crop&q=80&w=600",
+    image: "/images/koeksisters.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -142,7 +142,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Long Distance Travel Catering Box",
     category: Category.CATERING_BOXES,
     description: "Expertly designed, spill-proof, insulated travel box customized for long-distance transport. Keeps temperature controlled. Filled with: 6 Savory puff tarts, 6 Premium dry wors, 6 South African biltong bites, 6 Mini scones, 6 Assorted muffins, and 6 Cold pressed juice bottles.",
-    image: "/src/assets/images/catering_boxes_1780138249601.png",
+    image: "/images/catering_boxes.png",
     isBucket: false,
     basePrice: 750,
     badge: "Travel Specialized"
@@ -152,7 +152,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "School Kiddies Party Snack Box",
     category: Category.CATERING_BOXES,
     description: "Cute, individual kid-friendly snack box perfect for classrooms, birthdays, or field trips. Standard with high allergen safety: 1 Fruit juice box, 1 Mini chocolate muffin, 1 Cheese-and-savory pastry pinwheel, 1 Apple slice pack, and a Signature gold cookie.",
-    image: "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?auto=format&fit=crop&q=80&w=600",
+    image: "/images/snack_box.png",
     isBucket: false,
     basePrice: 85,
     badge: "Kid Favorite"

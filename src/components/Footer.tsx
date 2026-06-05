@@ -16,8 +16,13 @@ export default function Footer() {
           {/* Logo, branding, brand statement */}
           <div className="md:col-span-4 space-y-4 text-left">
             <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#D4AF37] bg-white text-[#D4AF37]">
-                <span className="font-serif text-xs font-bold">Nems</span>
+              <div className="relative h-11 w-11 overflow-hidden rounded-full border border-[#D4AF37] bg-white">
+                <img 
+                  src="/images/logo.png" 
+                  alt="Nems logo" 
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-contain p-0.5"
+                />
               </div>
               <div>
                 <h3 className="font-serif text-md font-bold text-white">Nems Bakery and Catering Co.</h3>
