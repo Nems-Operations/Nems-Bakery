@@ -37,7 +37,7 @@ export default function Navbar({
           {/* Logo image reflecting the original branding */}
           <div className="relative h-14 w-14 overflow-hidden rounded-full border border-gold bg-white shadow-sm transition-transform group-hover:scale-105">
             <img 
-              src="/images/logo.png" 
+              src="./images/logo.png" 
               alt="Nems Bakery and Catering logo" 
               referrerPolicy="no-referrer"
               className="h-full w-full object-contain p-0.5"

@@ -85,7 +85,7 @@ export default function Hero({ onStartOrder, onStartCustomQuote }: HeroProps) {
               
               {/* Core generated image */}
               <img 
-                src="/images/bakery_hero.png" 
+                src="./images/bakery_hero.png" 
                 alt="Nems catering pastries display" 
                 referrerPolicy="no-referrer"
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"

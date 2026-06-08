@@ -18,7 +18,7 @@ export default function Footer() {
             <div className="flex items-center space-x-3">
               <div className="relative h-11 w-11 overflow-hidden rounded-full border border-[#D4AF37] bg-white">
                 <img 
-                  src="/images/logo.png" 
+                  src="./images/logo.png" 
                   alt="Nems logo" 
                   referrerPolicy="no-referrer"
                   className="h-full w-full object-contain p-0.5"

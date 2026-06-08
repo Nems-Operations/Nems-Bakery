@@ -11,7 +11,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Golden Buttermilk Scones",
     category: Category.BAKERY_BUCKETS,
     description: "Famous South African high-tea buttery scones. Soft on the inside, golden on the outside. Served plain - perfect with fresh whipped cream, jam, and grated cheddar cheese.",
-    image: "/images/buttermilk_scones.png",
+    image: "./images/buttermilk_scones.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -33,7 +33,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Gourmet Cappuccino Morning Muffins",
     category: Category.BAKERY_BUCKETS,
     description: "A freshly baked premium selection of moist, fluffy gourmet cappuccino-infused mini muffins, dusted with fine chocolate and real cocoa powder. Pure morning indulgence.",
-    image: "/images/morning_muffins.png",
+    image: "./images/morning_muffins.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -55,7 +55,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional South African Butter Biscuits",
     category: Category.BAKERY_BUCKETS,
     description: "Rich melt-in-the-mouth pure butter cookies, beautifully piped and decorated with cherries, chocolate drops, or coconut flakes. Ideal for family gatherings and tea time.",
-    image: "/images/biscuits_assorted.png",
+    image: "./images/biscuits_assorted.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -77,7 +77,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Handmade Buttermilk Rusks",
     category: Category.BAKERY_BUCKETS,
     description: "Traditional chunky South African double-baked buttermilk rusks. Crafted with premium farm-fresh buttermilk and healthy seeds, perfectly crunchy and ready to dunk in warm coffee or tea.",
-    image: "/images/rusks_pack.png",
+    image: "./images/rusks_pack.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -99,7 +99,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Nems Signature Pastel Macarons",
     category: Category.DESSERTS,
     description: "Celebrating our brand logo! Delicate almond macarons filled with Belgian chocolate ganache and strawberry creme. Styled in stunning soft pink and mint-blue with subtle gold leafing.",
-    image: "/images/gourmet_macarons.png",
+    image: "./images/gourmet_macarons.png",
     isBucket: false,
     basePrice: 180, // For 12pcs
     bucketPrices: {
@@ -121,7 +121,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "South African Syrupy Koeksisters",
     category: Category.DESSERTS,
     description: "Traditional South African braided pastries, fried to golden perfection and instantly submerged in ice-cold ginger-and-cinnamon spiced syrup. Crispy outside, syrupy explosion inside.",
-    image: "/images/koeksisters.png",
+    image: "./images/koeksisters.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -142,7 +142,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Long Distance Travel Catering Box",
     category: Category.CATERING_BOXES,
     description: "Expertly designed, spill-proof, insulated travel box customized for long-distance transport. Keeps temperature controlled. Filled with: 6 Savory puff tarts, 6 Premium dry wors, 6 South African biltong bites, 6 Mini scones, 6 Assorted muffins, and 6 Cold pressed juice bottles.",
-    image: "/images/catering_boxes.png",
+    image: "./images/catering_boxes.png",
     isBucket: false,
     basePrice: 750,
     badge: "Travel Specialized"
@@ -152,7 +152,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "School Kiddies Party Snack Box",
     category: Category.CATERING_BOXES,
     description: "Cute, individual kid-friendly snack box perfect for classrooms, birthdays, or field trips. Standard with high allergen safety: 1 Fruit juice box, 1 Mini chocolate muffin, 1 Cheese-and-savory pastry pinwheel, 1 Apple slice pack, and a Signature gold cookie.",
-    image: "/images/snack_box.png",
+    image: "./images/snack_box.png",
     isBucket: false,
     basePrice: 85,
     badge: "Kid Favorite"
