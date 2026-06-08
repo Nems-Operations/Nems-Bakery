@@ -13,8 +13,8 @@ interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   cartItems: CartItem[];
-  onUpdateQty: (id: string, size: string | undefined, qty: number) => void;
-  onRemoveItem: (id: string, size: string | undefined) => void;
+  onUpdateQty: (id: string, size: string | undefined, qty: number, flavor?: string) => void;
+  onRemoveItem: (id: string, size: string | undefined, flavor?: string) => void;
   onClearCart: () => void;
 }
 
@@ -36,18 +36,18 @@ export default function CartDrawer({
   const [paymentMethod, setPaymentMethod] = useState<"standard" | "cod">("standard");
 
   const smallTreatItems = useMemo(() => {
-    return cartItems.filter(item => item.menuItem.id.startsWith("retail-"));
+    return cartItems.filter(item => item.menuItem.id.startsWith("retail-") || item.menuItem.id === "daily-muffin" || item.menuItem.id === "daily-cupcake");
   }, [cartItems]);
 
   const normalBakeItems = useMemo(() => {
-    return cartItems.filter(item => !item.menuItem.id.startsWith("retail-"));
+    return cartItems.filter(item => !item.menuItem.id.startsWith("retail-") && item.menuItem.id !== "daily-muffin" && item.menuItem.id !== "daily-cupcake");
   }, [cartItems]);
 
   const hasSmallOrders = smallTreatItems.length > 0;
   const hasNormalOrders = normalBakeItems.length > 0;
 
   const isOnlySmallOrders = useMemo(() => {
-    return cartItems.length > 0 && cartItems.every(item => item.menuItem.id.startsWith("retail-"));
+    return cartItems.length > 0 && cartItems.every(item => item.menuItem.id.startsWith("retail-") || item.menuItem.id === "daily-muffin" || item.menuItem.id === "daily-cupcake");
   }, [cartItems]);
 
   const deliveryFee = deliveryMethod === "delivery" ? 120 : 0;
@@ -62,8 +62,24 @@ export default function CartDrawer({
 
   const orderCalculations = useMemo(() => {
     const subtotal = smallSubtotal + normalSubtotal;
-    const total = subtotal + deliveryFee;
-    return { subtotal, total };
+    const vat = Math.round((subtotal * 0.15) * 100) / 100;
+    const total = Math.round((subtotal + vat + deliveryFee) * 100) / 100;
+    
+    const smallVat = Math.round((smallSubtotal * 0.15) * 100) / 100;
+    const normalVat = Math.round((normalSubtotal * 0.15) * 100) / 100;
+    
+    const codTotal = Math.round((smallSubtotal + smallVat) * 100) / 100;
+    const eftTotal = Math.round((normalSubtotal + normalVat + deliveryFee) * 100) / 100;
+    
+    return { 
+      subtotal, 
+      vat, 
+      total,
+      smallVat,
+      normalVat,
+      codTotal,
+      eftTotal
+    };
   }, [smallSubtotal, normalSubtotal, deliveryFee]);
 
   const handleCheckoutSubmit = async (e: FormEvent) => {
@@ -87,7 +103,7 @@ export default function CartDrawer({
     setSubmittingInvoice(true);
 
     const productsDescription = cartItems.map(
-      item => `${item.menuItem.name}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ''} x${item.quantity}`
+      item => `${item.menuItem.name}${item.selectedFlavor ? ` (${item.selectedFlavor})` : ''}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ''} x${item.quantity}`
     ).join(", ");
 
     const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -108,14 +124,15 @@ export default function CartDrawer({
         product: productsDescription.substring(0, 2000),
         quantity: totalQuantity,
         totalPrice: orderCalculations.total,
+        vatAmount: orderCalculations.vat,
         status: "Pending",
         orderDate: serverTimestamp(),
         deliveryMethod,
         deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
         paymentMethod: finalPaymentMode,
         paymentDetails: finalPaymentMode === "split_cod_eft" ? {
-          cod_amount: smallSubtotal,
-          eft_amount: normalSubtotal + deliveryFee
+          cod_amount: orderCalculations.codTotal,
+          eft_amount: orderCalculations.eftTotal
         } : null
       });
 
@@ -199,18 +216,18 @@ export default function CartDrawer({
                         {hasSmallOrders && paymentMethod === "cod" ? (
                           hasNormalOrders ? (
                             <div className="space-y-1">
-                              <span className="text-stone-900 font-bold uppercase tracking-wider text-[9px] block">Split Payment Instructions</span>
-                              <p>🧁 <strong className="text-stone-950">Daily Treats (Cash on Delivery):</strong> Please prepare <strong className="text-amber-800 font-mono font-bold">R {smallSubtotal}</strong> in cash to settle on delivery.</p>
-                              <p>🎂 <strong className="text-stone-950">Bulk Catering (Instant EFT / Card):</strong> The remaining <strong className="text-stone-950 font-mono font-bold">R {normalSubtotal + deliveryFee}</strong> must be settled via EFT before delivery.</p>
+                              <span className="text-stone-900 font-bold uppercase tracking-wider text-[9px] block">Split Payment Instructions (with 15% VAT):</span>
+                              <p>🧁 <strong className="text-stone-950">Daily Treats (Cash on Delivery):</strong> Please prepare <strong className="text-amber-800 font-mono font-bold">R {orderCalculations.codTotal.toFixed(2)}</strong> (incl. VAT) in cash to settle on delivery.</p>
+                              <p>🎂 <strong className="text-stone-950">Bulk Catering (Instant EFT / Card):</strong> The remaining <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.eftTotal.toFixed(2)}</strong> (incl. VAT) must be settled via EFT before delivery.</p>
                             </div>
                           ) : (
                             <p>
-                              Payment option is confirmed as <strong className="text-stone-950">Cash on Delivery (COD)</strong>. Please prepare exactly <strong className="text-stone-950 font-mono">R {orderCalculations.total}</strong> in cash for collection or delivery verification.
+                              Payment option is confirmed as <strong className="text-stone-950">Cash on Delivery (COD)</strong>. Please prepare exactly <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> (incl. 15% VAT) in cash for collection or delivery verification.
                             </p>
                           )
                         ) : (
                           <p>
-                            A dynamic quote receipt copy has been sent to your phone <strong className="text-stone-950">{customerPhone}</strong>. The total of <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total}</strong> can be paid altogether via secure instant EFT or card.
+                            A dynamic quote receipt copy has been sent to your phone <strong className="text-stone-950">{customerPhone}</strong>. The total of <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> (incl. 15% VAT) can be paid altogether via secure instant EFT or card.
                           </p>
                         )}
                       </div>
@@ -272,26 +289,33 @@ export default function CartDrawer({
                                   <strong className="text-xs font-semibold text-stone-900 block leading-tight truncate max-w-[160px]">
                                     {item.menuItem.name}
                                   </strong>
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {item.selectedFlavor && (
+                                      <span className="inline-block rounded bg-amber-100 px-1 py-0.5 text-[8.5px] font-bold text-[#C5A028] border border-gold/30">
+                                        Flavor: {item.selectedFlavor}
+                                      </span>
+                                    )}
+                                  </div>
                                   {item.specialInstructions && (
                                     <p className="text-[9px] text-stone-500 font-mono italic mt-0.5 max-w-[150px] truncate">
                                       "{item.specialInstructions}"
                                     </p>
                                   )}
                                   <span className="text-[10px] font-bold text-stone-500 block mt-0.5 font-mono">
-                                    R {item.unitPrice} each
+                                    R {item.unitPrice.toFixed(2)} each
                                   </span>
                                 </div>
                               </div>
 
                               <div className="flex flex-col items-end space-y-1 shrink-0 ml-2">
-                                <span className="font-mono text-xs font-bold text-stone-900">
-                                  R {item.unitPrice * item.quantity}
+                                <span className="font-mono text-xs font-bold text-stone-900 border-b border-stone-200 pb-0.5">
+                                  R {(item.unitPrice * item.quantity).toFixed(2)}
                                 </span>
                                 <div className="flex items-center space-x-2">
                                   <div className="flex h-5 items-center border border-stone-200 rounded bg-white overflow-hidden text-[10px]">
                                     <button
                                       type="button"
-                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity - 1)}
+                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity - 1, item.selectedFlavor)}
                                       className="px-1 hover:bg-stone-100"
                                     >
                                       -
@@ -299,7 +323,7 @@ export default function CartDrawer({
                                     <span className="px-1.5 font-bold font-mono">{item.quantity}</span>
                                     <button
                                       type="button"
-                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity + 1)}
+                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity + 1, item.selectedFlavor)}
                                       className="px-1 hover:bg-stone-100"
                                     >
                                       +
@@ -307,7 +331,7 @@ export default function CartDrawer({
                                   </div>
                                   <button
                                     type="button"
-                                    onClick={() => onRemoveItem(item.id, item.selectedSize)}
+                                    onClick={() => onRemoveItem(item.id, item.selectedSize, item.selectedFlavor)}
                                     className="text-stone-400 hover:text-rose-500 transition-colors"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -347,31 +371,38 @@ export default function CartDrawer({
                                   <strong className="text-xs font-semibold text-stone-900 block leading-tight truncate max-w-[160px]">
                                     {item.menuItem.name}
                                   </strong>
-                                  {item.selectedSize && (
-                                    <span className="inline-block rounded bg-stone-100 px-1 py-0.5 text-[8px] font-bold text-stone-700 mt-0.5">
-                                      Size: {item.selectedSize} Bucket
-                                    </span>
-                                  )}
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {item.selectedSize && (
+                                      <span className="inline-block rounded bg-stone-100 px-1 py-0.5 text-[8px] font-bold text-stone-700">
+                                        Size: {item.selectedSize} Bucket
+                                      </span>
+                                    )}
+                                    {item.selectedFlavor && (
+                                      <span className="inline-block rounded bg-amber-100 px-1 py-0.5 text-[8.5px] font-bold text-[#C5A028] border border-gold/30">
+                                        Flavor: {item.selectedFlavor}
+                                      </span>
+                                    )}
+                                  </div>
                                   {item.specialInstructions && (
                                     <p className="text-[9px] text-stone-500 font-mono italic mt-0.5 max-w-[150px] truncate">
                                       "{item.specialInstructions}"
                                     </p>
                                   )}
                                   <span className="text-[10px] font-bold text-stone-500 block mt-0.5 font-mono">
-                                    R {item.unitPrice} each
+                                    R {item.unitPrice.toFixed(2)} each
                                   </span>
                                 </div>
                               </div>
 
                               <div className="flex flex-col items-end space-y-1 shrink-0 ml-2">
-                                <span className="font-mono text-xs font-bold text-stone-900">
-                                  R {item.unitPrice * item.quantity}
+                                <span className="font-mono text-xs font-bold text-stone-900 border-b border-stone-200 pb-0.5">
+                                  R {(item.unitPrice * item.quantity).toFixed(2)}
                                 </span>
                                 <div className="flex items-center space-x-2">
                                   <div className="flex h-5 items-center border border-stone-200 rounded bg-white overflow-hidden text-[10px]">
                                     <button
                                       type="button"
-                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity - 1)}
+                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity - 1, item.selectedFlavor)}
                                       className="px-1 hover:bg-stone-100"
                                     >
                                       -
@@ -379,7 +410,7 @@ export default function CartDrawer({
                                     <span className="px-1.5 font-bold font-mono">{item.quantity}</span>
                                     <button
                                       type="button"
-                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity + 1)}
+                                      onClick={() => onUpdateQty(item.id, item.selectedSize, item.quantity + 1, item.selectedFlavor)}
                                       className="px-1 hover:bg-stone-100"
                                     >
                                       +
@@ -387,7 +418,7 @@ export default function CartDrawer({
                                   </div>
                                   <button
                                     type="button"
-                                    onClick={() => onRemoveItem(item.id, item.selectedSize)}
+                                    onClick={() => onRemoveItem(item.id, item.selectedSize, item.selectedFlavor)}
                                     className="text-stone-400 hover:text-rose-500 transition-colors"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -467,7 +498,7 @@ export default function CartDrawer({
                           <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Physical Delivery Address in SA *</label>
                           <input
                             type="text"
-                            placeholder="e.g. 124 Francis Street, Pretoria"
+                            placeholder="e.g. 834 9th avenue, Alexandra, Johannesburg"
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                             className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
@@ -519,50 +550,47 @@ export default function CartDrawer({
                     </div>
 
                     {/* Payment Calculator details */}
-                    <div className="bg-stone-50 p-4 rounded-xl space-y-2.5 border border-stone-200/40 text-xs">
-                      {hasNormalOrders && (
-                        <div className="flex justify-between">
-                          <span className="text-stone-500 font-medium font-sans">🎂 Catering Subtotal:</span>
-                          <strong className="text-stone-900 font-mono">R {normalSubtotal}</strong>
-                        </div>
-                      )}
-                      {hasSmallOrders && (
-                        <div className="flex justify-between">
-                          <span className="text-stone-500 font-medium font-sans">🧁 Daily Treats Subtotal:</span>
-                          <strong className="text-stone-900 font-mono">R {smallSubtotal}</strong>
-                        </div>
-                      )}
+                    <div className="bg-stone-50 p-4 rounded-xl space-y-2.5 border border-stone-200/40 text-xs text-stone-800">
+                      <div className="flex justify-between text-[11px] text-stone-500">
+                        <span>Items Subtotal (Excl. VAT):</span>
+                        <span className="font-mono">R {(smallSubtotal + normalSubtotal).toFixed(2)}</span>
+                      </div>
                       
                       {deliveryFee > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-stone-500 font-medium font-sans">🚚 Courier Fee:</span>
-                          <strong className="text-stone-900 font-mono">R {deliveryFee}</strong>
+                        <div className="flex justify-between text-[11px] text-stone-500">
+                          <span>🚚 Courier Fee:</span>
+                          <strong className="text-stone-800 font-mono">R {deliveryFee.toFixed(2)}</strong>
                         </div>
                       )}
+
+                      <div className="flex justify-between text-[11px] text-[#C5A028] font-bold border-t border-stone-150 pt-2">
+                        <span>🇿🇦 South African VAT (15%):</span>
+                        <span className="font-mono">R {orderCalculations.vat.toFixed(2)}</span>
+                      </div>
 
                       {/* Split displays vs combined display */}
                       {hasSmallOrders && hasNormalOrders && paymentMethod === "cod" ? (
                         <div className="border-t border-dashed border-stone-200 pt-2.5 space-y-1.5 font-bold">
-                          <div className="flex justify-between text-yellow-800 bg-amber-50/50 p-1.5 rounded text-[11px]">
-                            <span>💵 Daily Treats (COD Due):</span>
-                            <span className="font-mono">R {smallSubtotal}</span>
+                          <div className="flex justify-between text-yellow-850 bg-amber-50/50 p-1.5 rounded text-[11px] border border-amber-100">
+                            <span>💵 Daily Treats (COD Due + 15% VAT):</span>
+                            <span className="font-mono">R {orderCalculations.codTotal.toFixed(2)}</span>
                           </div>
-                          <div className="flex justify-between text-stone-700 p-1.5 rounded text-[11px]">
-                            <span>🎂 Bulk Catering (EFT Due):</span>
-                            <span className="font-mono">R {normalSubtotal + deliveryFee}</span>
+                          <div className="flex justify-between text-stone-700 p-1.5 rounded text-[11px] bg-stone-100 border border-stone-200">
+                            <span>🎂 Bulk Catering (EFT Due + 15% VAT):</span>
+                            <span className="font-mono">R {orderCalculations.eftTotal.toFixed(2)}</span>
                           </div>
-                          <div className="flex justify-between border-t border-stone-200 pt-1.5 text-xs text-stone-900">
-                            <span>Total Package Price:</span>
-                            <strong className="font-mono text-gold">R {smallSubtotal + normalSubtotal + deliveryFee}</strong>
+                          <div className="flex justify-between border-t border-stone-200 pt-1.5 text-xs text-stone-900 bg-[#FDFAF5] p-1.5 border border-gold/30">
+                            <span>Total Package Price (VAT Incl.):</span>
+                            <strong className="font-mono text-gold">R {orderCalculations.total.toFixed(2)}</strong>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex justify-between border-t border-[#D4AF37]/30 pt-2 text-sm">
+                        <div className="flex justify-between border-t border-[#D4AF37]/30 pt-2 text-sm bg-[#FDFAF5] p-2 border border-gold/30 rounded">
                           <span className="font-bold text-stone-950 font-serif">
-                            {paymentMethod === "cod" ? "COD Order Total:" : "Combined Order Total:"}
+                            {paymentMethod === "cod" ? "COD Total (VAT Incl.):" : "Combined Total (VAT Incl.):"}
                           </span>
                           <strong className="font-black text-[#D4AF37] font-serif font-mono text-base">
-                            R {orderCalculations.total}
+                            R {orderCalculations.total.toFixed(2)}
                           </strong>
                         </div>
                       )}

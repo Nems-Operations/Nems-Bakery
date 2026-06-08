@@ -197,7 +197,7 @@ export const GALLERY_ITEMS: EventGalleryItem[] = [
     id: "event-1",
     title: "Elegant Gold Wedding Banquets",
     theme: "Gold & White Premium Royalty",
-    description: "A gorgeous 250-guest ceremony in Pretoria featuring towering macaroon pyramids, warm gold decor backdrops, and butler-served mini-scone trays for early morning guest arrivals.",
+    description: "A gorgeous 250-guest ceremony in Johannesburg featuring towering macaroon pyramids, warm gold decor backdrops, and butler-served mini-scone trays for early morning guest arrivals.",
     image: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=800",
     capacityRange: "100 - 450 Guests",
     tag: "Wedding"

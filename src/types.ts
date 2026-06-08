@@ -28,6 +28,7 @@ export interface CartItem {
   id: string;
   menuItem: MenuItem;
   selectedSize?: BucketSize; // For buckets
+  selectedFlavor?: string; // Selected Common Flavor for custom items
   quantity: number;
   specialInstructions?: string;
   unitPrice: number;

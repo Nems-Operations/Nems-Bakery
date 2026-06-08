@@ -50,7 +50,7 @@ export default function Navbar({
               Nems Bakery <span className="text-gold">&</span> Catering Co.
             </h1>
             <p className="hidden text-[9px] uppercase tracking-[0.2em] text-stone-500 sm:block">
-              Est. Pretoria • Fine Flour & Fire
+              Est. Johannesburg • Fine Flour & Fire
             </p>
           </div>
         </div>

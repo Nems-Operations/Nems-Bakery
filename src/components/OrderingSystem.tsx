@@ -13,9 +13,21 @@ interface OrderingSystemProps {
     item: MenuItem,
     quantity: number,
     selectedSize?: BucketSize,
-    specialInstructions?: string
+    specialInstructions?: string,
+    selectedFlavor?: string
   ) => void;
 }
+
+const BUCKET_FLAVOR_OPTIONS: Record<string, string[]> = {
+  "scones-bucket": ["Classic Buttermilk Only", "Sweet Sultana Infusion", "Savory Cheese & Herbs", "Mixed Assortment (Sweet & Savory)"],
+  "muffins-bucket": ["Cappuccino Chocolate", "Harvest Bran & Raisin", "Double Belgian Chocolate", "Lemon Poppy Seed Splash", "Assorted Morning Feast"],
+  "biscuits-bucket": ["Traditional Butter Swirl", "Coconut Crunch & Cherry", "Dipped Belgian Dark Bark", "Assorted Heritage Box"],
+  "rusks-bucket": ["Classic Farm Buttermilk", "Roasted Almond & Seed", "Assorted Dip Platter"],
+  "gourmet-macarons": ["Traditional Pastel Mix", "Belgian Dark Choc & Strawberry", "Cream Caramel & Pistachio"],
+  "koeksisters-deluxe": ["Traditional Spice Syrup", "Golden Ginger & Citrus Syrup"],
+  "travel-box": ["Standard Mixed Box (Savory & Sweet)"],
+  "snack-box": ["Standard Kid-Safe Sweet Mix"]
+};
 
 export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category>(Category.BAKERY_BUCKETS);
@@ -41,6 +53,16 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
     "snack-box": 10 // Minimum 10
   });
 
+  // Track flavor selections per bucket item IDs
+  const [flavorSelection, setFlavorSelection] = useState<Record<string, string>>({
+    "scones-bucket": "Classic Buttermilk Only",
+    "muffins-bucket": "Cappuccino Chocolate",
+    "biscuits-bucket": "Traditional Butter Swirl",
+    "rusks-bucket": "Classic Farm Buttermilk",
+    "gourmet-macarons": "Traditional Pastel Mix",
+    "koeksisters-deluxe": "Traditional Spice Syrup",
+  });
+
   const [specialNotes, setSpecialNotes] = useState<Record<string, string>>({});
   const [addedItemFeedback, setAddedItemFeedback] = useState<Record<string, boolean>>({});
 
@@ -56,12 +78,19 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
     setQuantities((prev) => ({ ...prev, [itemId]: value }));
   };
 
+  const handleFlavorChange = (itemId: string, flavor: string) => {
+    setFlavorSelection((prev) => ({ ...prev, [itemId]: flavor }));
+  };
+
   const executeAddToBag = (item: MenuItem) => {
     const qty = quantities[item.id] || 1;
     const size = item.isBucket || item.id === "gourmet-macarons" ? sizeSelection[item.id] : undefined;
     const notes = specialNotes[item.id] || "";
+    const flavor = BUCKET_FLAVOR_OPTIONS[item.id]
+      ? (flavorSelection[item.id] || BUCKET_FLAVOR_OPTIONS[item.id][0])
+      : undefined;
 
-    onAddToBag(item, qty, size, notes);
+    onAddToBag(item, qty, size, notes, flavor);
 
     // Show temporary "Added!" indicator on the item card
     setAddedItemFeedback((prev) => ({ ...prev, [item.id]: true }));
@@ -207,6 +236,26 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
                       )}
                     </div>
                   )}
+
+                   {/* Flavor selector for goods with different common flavors */}
+                   {BUCKET_FLAVOR_OPTIONS[item.id] && BUCKET_FLAVOR_OPTIONS[item.id].length > 1 && (
+                     <div className="space-y-1.5 bg-amber-50/20 p-3.5 border border-gold/30 rounded-lg">
+                       <label className="text-[9px] font-extrabold text-stone-900 uppercase tracking-widest block font-sans">
+                         Choose Baked Flavor
+                       </label>
+                       <select
+                         value={flavorSelection[item.id] || BUCKET_FLAVOR_OPTIONS[item.id][0]}
+                         onChange={(e) => handleFlavorChange(item.id, e.target.value)}
+                         className="w-full text-xs border border-stone-200 rounded px-2.5 py-2.5 bg-white text-stone-950 font-semibold focus:outline-none focus:border-gold cursor-pointer"
+                       >
+                         {BUCKET_FLAVOR_OPTIONS[item.id].map((flv) => (
+                           <option key={flv} value={flv}>
+                             ✨ {flv}
+                           </option>
+                         ))}
+                       </select>
+                     </div>
+                   )}
 
                   {/* Special note input */}
                   <div className="space-y-1.5">

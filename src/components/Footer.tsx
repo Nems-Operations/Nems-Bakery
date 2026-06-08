@@ -33,6 +33,16 @@ export default function Footer() {
             <p className="text-xs text-stone-400 leading-relaxed max-w-sm">
               We specialize in premium batches of high-tea buttermilk scones, wedding macarons, customized catering menus, and allergen-safe setups. Serving households and corporate headquarters across Gauteng, South Africa.
             </p>
+            
+            {/* Social channels block as requested */}
+            <div className="pt-2 flex flex-col space-y-1 text-xs text-stone-400">
+              <span className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-black block mb-0.5">Follow Our Creations</span>
+              <div className="flex flex-col space-y-0.5 text-stone-300">
+                <span>📸 <strong>Instagram:</strong> Nems Bakery and Catering Co.</span>
+                <span>👥 <strong>Facebook:</strong> Nems Bakery and Catering Co.</span>
+                <span>🎵 <strong>TikTok:</strong> Nems Bakery and Catering Co.</span>
+              </div>
+            </div>
           </div>
 
           {/* Contact Details Column */}
@@ -42,17 +52,17 @@ export default function Footer() {
               <li className="flex items-start space-x-2.5">
                 <MapPin className="h-4 w-4 text-[#D4AF37] shrink-0 mt-0.5" />
                 <span>
-                  <strong>Pretoria Central:</strong> 124 Francis Street, Pretoria<br />
-                  <strong>Sandton Kitchen:</strong> 45 Rivonia Road, Johannesburg
+                  <strong>Baking Kitchen:</strong> 834 9th avenue, Alexandra, 2090<br />
+                  <strong>Gauteng Hub:</strong> Johannesburg, South Africa
                 </span>
               </li>
               <li className="flex items-center space-x-2.5">
                 <Phone className="h-4 w-4 text-[#D4AF37] shrink-0" />
-                <span>+27 (0) 82 456 7890 • +27 (0) 12 345 6789</span>
+                <span>+27 (0) 63 786 2408 (Call &amp; WhatsApp)</span>
               </li>
               <li className="flex items-center space-x-2.5">
                 <Mail className="h-4 w-4 text-[#D4AF37] shrink-0" />
-                <span className="hover:text-amber-300">orders@nemsbakery.co.za</span>
+                <a href="mailto:orders.nemsbakery@gmail.com" className="hover:text-amber-300">orders.nemsbakery@gmail.com</a>
               </li>
             </ul>
           </div>
@@ -80,7 +90,7 @@ export default function Footer() {
 
         {/* Bottom footer bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-500 font-medium">
-          <p>© {new Date().getFullYear()} Nems Bakery and Catering Co. (Pty) Ltd. Johannesburg & Pretoria. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Nems Bakery and Catering Co. (Pty) Ltd. Johannesburg. All rights reserved.</p>
           <p className="flex items-center mt-3 sm:mt-0">
             <span>Lovingly styled in colors of the macaron logo </span>
             <Heart className="h-3.5 w-3.5 text-[#ECA1A6] fill-[#ECA1A6] mx-1" />
