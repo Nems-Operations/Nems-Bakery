@@ -7,6 +7,7 @@ import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import OrderingSystem from "./components/OrderingSystem";
+import DailyTreats from "./components/DailyTreats";
 import CateringPackageBuilder from "./components/CateringPackageBuilder";
 import EventGallery from "./components/EventGallery";
 import CartDrawer from "./components/CartDrawer";
@@ -117,6 +118,12 @@ export default function App() {
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleStartDailyTreats = () => {
+    setActiveSection("daily-treats");
+    const el = document.getElementById("daily-treats");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFAF5] text-stone-900 selection:bg-[#D4AF37]/20 selection:text-stone-950">
       
@@ -146,6 +153,7 @@ export default function App() {
         <Hero 
           onStartOrder={handleStartOrder}
           onStartCustomQuote={handleStartCustomQuote}
+          onStartDailyTreats={handleStartDailyTreats}
         />
 
         {/* Brand Promise Section */}
@@ -185,6 +193,11 @@ export default function App() {
 
         {/* 2. Interactive Online Ordering Section */}
         <OrderingSystem 
+          onAddToBag={handleAddToBag}
+        />
+
+        {/* New Daily Treats / Small Orders Section */}
+        <DailyTreats 
           onAddToBag={handleAddToBag}
         />
 

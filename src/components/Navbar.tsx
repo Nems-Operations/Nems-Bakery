@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ShoppingCart, Calendar, Cake, Coffee, HelpCircle, Utensils } from "lucide-react";
+import { ShoppingCart, Calendar, Cake, Coffee, HelpCircle, Utensils, Cookie } from "lucide-react";
 
 interface NavbarProps {
   cartCount: number;
@@ -21,6 +21,7 @@ export default function Navbar({
   const navLinks = [
     { id: "hero", label: "Home", icon: Cake },
     { id: "ordering", label: "Bakery Buckets & Shop", icon: Coffee },
+    { id: "daily-treats", label: "Small Orders", icon: Cookie },
     { id: "catering-builder", label: "Custom Catering Quote", icon: Utensils },
     { id: "event-gallery", label: "Event Showcase", icon: Calendar },
   ];

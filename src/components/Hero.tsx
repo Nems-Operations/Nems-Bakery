@@ -8,9 +8,10 @@ import { ArrowRight, Sparkles, MapPin, Truck, Award, ShieldAlert } from "lucide-
 interface HeroProps {
   onStartOrder: () => void;
   onStartCustomQuote: () => void;
+  onStartDailyTreats: () => void;
 }
 
-export default function Hero({ onStartOrder, onStartCustomQuote }: HeroProps) {
+export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats }: HeroProps) {
   return (
     <section id="hero" className="relative overflow-hidden bg-white py-16 lg:py-24 border-b border-gold">
       {/* Decorative Golden Orbs in Background */}
@@ -61,20 +62,27 @@ export default function Hero({ onStartOrder, onStartCustomQuote }: HeroProps) {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
               <button
                 onClick={onStartOrder}
-                className="flex items-center justify-center space-x-2 bg-gold px-8 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-black transition-colors shadow-sm group"
+                className="flex items-center justify-center space-x-2 bg-gold px-6 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-black transition-colors shadow-sm group"
               >
-                <span>Store & Ordering</span>
+                <span>Bakery Buckets</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
               <button
-                onClick={onStartCustomQuote}
-                className="flex items-center justify-center space-x-2 bg-white px-8 py-4 text-xs font-bold uppercase tracking-widest text-gold border-2 border-gold hover:bg-neutral-50 hover:text-ink transition-colors"
+                onClick={onStartDailyTreats}
+                className="flex items-center justify-center space-x-2 bg-stone-950 px-6 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-gold transition-colors shadow-sm"
               >
-                <span>Customize Packages</span>
+                <span>Order Daily Treats</span>
+              </button>
+
+              <button
+                onClick={onStartCustomQuote}
+                className="flex items-center justify-center space-x-2 bg-white px-6 py-4 text-xs font-bold uppercase tracking-widest text-gold border-2 border-gold hover:bg-neutral-50 hover:text-ink transition-colors"
+              >
+                <span>Custom Packages</span>
               </button>
             </div>
           </div>
