@@ -14,12 +14,14 @@ import CartDrawer from "./components/CartDrawer";
 import Footer from "./components/Footer";
 import { MenuItem, BucketSize, CartItem } from "./types";
 import { MENU_ITEMS } from "./data";
-import { Info, Sparkles, AlertCircle } from "lucide-react";
+import { Info, Sparkles, AlertCircle, ShoppingBag, X } from "lucide-react";
 
 export default function App() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("hero");
+  const [toast, setToast] = useState<{ visible: boolean; message: string } | null>(null);
+  const [toastTimer, setToastTimer] = useState<any>(null);
 
   // Handle adding items to the cart
   const handleAddToBag = (
@@ -63,8 +65,22 @@ export default function App() {
       ];
     });
 
-    // Auto open cart drawer for better feedback
-    setIsCartOpen(true);
+    // Clear any active toast timers
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+    }
+
+    // Set new toast
+    setToast({
+      visible: true,
+      message: `${quantity}x ${item.name} added to your bag!`
+    });
+
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 6000);
+
+    setToastTimer(timer);
   };
 
   // Handle updating amount of items inside drawer
@@ -219,6 +235,65 @@ export default function App() {
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
       />
+
+      {/* Dynamic Checkout Toast Prompt */}
+      {toast && toast.visible && (
+        <>
+          <style>{`
+            @keyframes shrinkTimeout {
+              0% { width: 100%; }
+              100% { width: 0%; }
+            }
+          `}</style>
+          <div 
+            id="cart-checkout-toast"
+            className="fixed bottom-6 right-6 md:right-10 z-[100] max-w-sm w-[90%] sm:w-full bg-stone-950/95 backdrop-blur-md text-white p-4 rounded-xl shadow-2xl border border-[#D4AF37]/50 flex flex-col space-y-2.5 transition-all duration-300 md:hover:scale-[1.02]"
+          >
+            <div className="flex items-start justify-between space-x-3">
+              <div className="flex items-center space-x-3 min-w-0">
+                <div className="bg-[#D4AF37]/20 p-2 rounded-lg text-[#D4AF37] shrink-0 animate-pulse">
+                  <ShoppingBag className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Delicacy Added</p>
+                  <p className="text-xs font-semibold text-stone-100 mt-1 truncate">{toast.message}</p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setToast(null)}
+                className="text-stone-400 hover:text-white transition-colors p-1"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[10px] text-stone-400 font-medium">Continue shopping or...</span>
+              <button
+                onClick={() => {
+                  setIsCartOpen(true);
+                  setToast(null);
+                }}
+                className="bg-[#D4AF37] hover:bg-white text-stone-950 px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all shadow-lg active:scale-95 cursor-pointer"
+              >
+                Go to checkout →
+              </button>
+            </div>
+
+            {/* Animated shrinking progress line */}
+            <div className="h-[2px] w-full bg-stone-800 rounded-full overflow-hidden mt-1">
+              <div 
+                className="h-full bg-[#D4AF37] rounded-full"
+                style={{
+                  animation: "shrinkTimeout 6s linear forwards"
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Footer Area */}
       <Footer />
