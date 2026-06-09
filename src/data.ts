@@ -11,7 +11,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Golden Buttermilk Scones",
     category: Category.BAKERY_BUCKETS,
     description: "Famous South African high-tea buttery scones. Soft on the inside, golden on the outside. Served plain - perfect with fresh whipped cream, jam, and grated cheddar cheese.",
-    image: "/src/assets/images/scones_bucket_new_1780975055905.png",
+    image: "./images/scones_bucket_new_1780975055905.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -33,7 +33,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Gourmet Morning Muffins",
     category: Category.BAKERY_BUCKETS,
     description: "A freshly baked premium selection of moist, fluffy gourmet mini muffins, dusted with fine chocolate and real cocoa powder. Pure morning indulgence.",
-    image: "/src/assets/images/muffins_bucket_new_1780975069955.png",
+    image: "./images/muffins_bucket_new_1780975069955.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -55,7 +55,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional South African Butter Biscuits",
     category: Category.BAKERY_BUCKETS,
     description: "Rich melt-in-the-mouth pure butter biscuits. A special bakery assortment combining plain butter crisps, cherry-crowned stars, rich chocolate-dipped shortbreads, festive 100s & 1000s sprinkles, and elegant piped swirls.",
-    image: "/src/assets/images/biscuits_bucket_new_1780975085698.png",
+    image: "./images/biscuits_bucket_new_1780975085698.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -77,7 +77,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Handmade Buttermilk Rusks",
     category: Category.BAKERY_BUCKETS,
     description: "Traditional chunky South African double-baked buttermilk rusks. Crafted with premium farm-fresh buttermilk and healthy seeds, perfectly crunchy and ready to dunk in warm coffee or tea.",
-    image: "/src/assets/images/rusks_bucket_new_1780975098836.png",
+    image: "./images/rusks_bucket_new_1780975098836.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
