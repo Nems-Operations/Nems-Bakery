@@ -16,7 +16,7 @@ const PREVIEW_ITEMS = [
     name: "Buttermilk Scone",
     price: 15.00,
     description: "Traditional high-crown flaky scone.",
-    image: "https://images.unsplash.com/photo-1588058365548-9fee55860389?auto=format&fit=crop&q=80&w=800",
+    image: "./images/buttermilk_scones.png",
     badge: "Tea Favorite"
   },
   {
@@ -24,7 +24,7 @@ const PREVIEW_ITEMS = [
     name: "Classic Butter Rusk",
     price: 20.00,
     description: "Crunchy double-baked buttermilk dunker.",
-    image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=800",
+    image: "./images/rusks_pack.png",
     badge: "Coffee Dunker"
   },
   {
@@ -40,7 +40,7 @@ const PREVIEW_ITEMS = [
     name: "Silky Iced Cupcake",
     price: 6.00,
     description: "Decorated sponge with rich frosting.",
-    image: "https://images.unsplash.com/photo-1576618144449-cd747ffb7ded?auto=format&fit=crop&q=80&w=600",
+    image: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&q=80&w=600",
     badge: "Lux Frosting"
   },
   {
@@ -48,7 +48,7 @@ const PREVIEW_ITEMS = [
     name: "Almond & Seed Rusk",
     price: 30.00,
     description: "Gourmet rusk with almonds & triple-seeds.",
-    image: "https://images.unsplash.com/photo-1517433456452-f9633a875f6f?auto=format&fit=crop&q=80&w=800",
+    image: "./images/rusks_pack.png",
     badge: "Low Sugar"
   },
   {
@@ -56,7 +56,7 @@ const PREVIEW_ITEMS = [
     name: "Cherry Butter Biscuit",
     price: 10.00,
     description: "Traditional butter swirl with cherry dome.",
-    image: "https://images.unsplash.com/photo-1558961309-dbdf079121ff?auto=format&fit=crop&q=80&w=800",
+    image: "./images/biscuits_assorted.png",
     badge: "Heritage Swirl",
     isComingSoon: true
   },
@@ -65,7 +65,7 @@ const PREVIEW_ITEMS = [
     name: "Chocolate Dipped Biscuit",
     price: 12.00,
     description: "Classic piped shortbread in Belgian dark choc.",
-    image: "https://images.unsplash.com/photo-1590080875134-460b1f55191b?auto=format&fit=crop&q=80&w=800",
+    image: "./images/biscuits_assorted.png",
     badge: "Dark Decadence",
     isComingSoon: true
   },
@@ -74,7 +74,7 @@ const PREVIEW_ITEMS = [
     name: "Pastel Macaron",
     price: 18.00,
     description: "Delicate almond macaron with strawberry cream.",
-    image: "https://images.unsplash.com/photo-1569864358642-9d1684040f43?auto=format&fit=crop&q=80&w=800",
+    image: "./images/gourmet_macarons.png",
     badge: "Award Winner",
     isComingSoon: true
   }
