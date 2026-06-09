@@ -24,7 +24,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Individual Traditional Buttermilk Scone",
     category: Category.DESSERTS,
     description: "Our signature flaky buttermilk high-crown scone. Served fresh with a companion portion of whipped farm cream and sweet strawberry jam.",
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=600",
+    image: "./images/buttermilk_scones.png",
     isBucket: false,
     basePrice: 15,
     badge: "Tea Time Favourite"
@@ -34,7 +34,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Traditional Classic Small Rusk",
     category: Category.BAKERY_BUCKETS,
     description: "Expertly double-baked pure buttermilk rusk. Perfectly block-cut, crunchy, dry, and ready for hot coffee or tea dunking.",
-    image: "https://images.unsplash.com/photo-1558961313-7f8a9e557e4e?auto=format&fit=crop&q=80&w=600",
+    image: "./images/rusks_pack.png",
     isBucket: false,
     basePrice: 20,
     badge: "Dunking Essential"
@@ -44,7 +44,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Gourmet Almond & Triple-Seed Rusk",
     category: Category.BAKERY_BUCKETS,
     description: "Premium wellness rusk baked with real farm butter, thick roasted almonds, pumpkin seeds, sesame, and sunflower seeds.",
-    image: "https://images.unsplash.com/photo-1598114858882-34fd0822699e?auto=format&fit=crop&q=80&w=600",
+    image: "./images/rusks_pack.png",
     isBucket: false,
     basePrice: 30,
     badge: "Low Sugar"
@@ -54,30 +54,33 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Piped Butter Biscuit with Cherry",
     category: Category.BAKERY_BUCKETS,
     description: "Traditional melt-in-the-mouth pure butter cookie, piped into a beautiful swirl and finished with a sweet glazed red cherry dome.",
-    image: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&q=80&w=600",
+    image: "./images/biscuits_assorted.png",
     isBucket: false,
     basePrice: 10,
-    badge: "Heritage Swirl"
+    badge: "Heritage Swirl",
+    isComingSoon: true
   },
   {
     id: "retail-biscuit-chocolate",
     name: "Dipped Belgian Chocolate Butter Biscuit",
     category: Category.BAKERY_BUCKETS,
     description: "Our classic piped shortbread biscuit, generously hand-dipped in rich, melted premium Belgian dark chocolate.",
-    image: "https://images.unsplash.com/photo-1550617931-e17a7b70dce2?auto=format&fit=crop&q=80&w=600",
+    image: "./images/biscuits_assorted.png",
     isBucket: false,
     basePrice: 12,
-    badge: "Choc Indulgence"
+    badge: "Choc Indulgence",
+    isComingSoon: true
   },
   {
     id: "retail-macaron-single",
     name: "Nems Signature Single Pastel Macaron",
     category: Category.DESSERTS,
     description: "A single piece of our award-winning delicate almond macaron with choice white chocolate and crushed strawberry cream filling.",
-    image: "https://images.unsplash.com/photo-1569864358642-9d1684040f43?auto=format&fit=crop&q=80&w=600",
+    image: "./images/gourmet_macarons.png",
     isBucket: false,
     basePrice: 18,
-    badge: "Logo Signature"
+    badge: "Logo Signature",
+    isComingSoon: true
   }
 ];
 
@@ -570,16 +573,28 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
                       referrerPolicy="no-referrer"
                       className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
                     />
-                    {item.badge && (
+                    {item.badge && !item.isComingSoon && (
                       <span className="absolute top-0 left-0 bg-[#D4AF37] text-white px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-widest">
                         {item.badge}
                       </span>
                     )}
                     
                     {/* Visual indicator of what's added */}
-                    {qtySelected > 0 && (
+                    {qtySelected > 0 && !item.isComingSoon && (
                       <div className="absolute top-2 right-2 bg-black text-white px-2.5 py-1 text-xs font-black tracking-wider shadow-md rounded-xs">
                         Selected: {qtySelected}
+                      </div>
+                    )}
+
+                    {/* Coming Soon overlay with brand stamp */}
+                    {item.isComingSoon && (
+                      <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 z-10 select-none">
+                        <div className="mb-1.5 h-10 w-10 rounded-full border border-gold bg-white p-1 flex items-center justify-center shadow-md animate-pulse">
+                          <img src="./images/logo.png" alt="Nems Logo" className="h-[90%] w-[90%] object-contain" />
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-stone-100 text-stone-950 border border-gold px-2.5 py-1.5 shadow-sm">
+                          Coming Soon
+                        </span>
                       </div>
                     )}
                   </div>
@@ -591,63 +606,73 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
                         <h3 className="serif text-lg font-bold text-stone-900 leading-tight">
                           {item.name}
                         </h3>
-                        <span className="text-base font-bold text-[#D4AF37] shrink-0 ml-2 font-mono">
-                          R {item.basePrice.toFixed(2)}
-                        </span>
+                        {!item.isComingSoon && (
+                          <span className="text-base font-bold text-[#D4AF37] shrink-0 ml-2 font-mono">
+                            R {item.basePrice.toFixed(2)}
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] text-stone-500 leading-relaxed line-clamp-2">
                         {item.description}
                       </p>
                     </div>
 
-                    {/* Flavors Select section */}
-                    {possibleFlavors.length > 0 && (
-                      <div className="space-y-1 bg-stone-50 p-2 border border-stone-150 rounded-lg">
-                        <label className="text-[8.5px] uppercase tracking-wider text-stone-500 font-bold block">
-                          Select Common Flavor:
-                        </label>
-                        <select
-                          value={currentFlavor}
-                          onChange={(e) => handleFlavorChange(item.id, e.target.value)}
-                          className="w-full text-[11px] border border-stone-200 bg-white rounded px-2 py-1 focus:outline-none focus:border-gold py-1.5 font-medium text-stone-800"
-                        >
-                          {possibleFlavors.map((flv) => (
-                            <option key={flv} value={flv}>
-                              ✨ {flv}
-                            </option>
-                          ))}
-                        </select>
+                    {item.isComingSoon ? (
+                      <div className="bg-stone-50 p-3.5 border border-dashed border-stone-200 text-center rounded-xl space-y-1.5">
+                        <span className="text-[9.5px] font-black text-[#C5A028] block uppercase tracking-wider">Not Available</span>
+                        <p className="text-[10px] text-stone-400">Our bakers are currently upgrading our small pastry line. Grab biscuit buckets or daily custom muffin boxes instead!</p>
                       </div>
+                    ) : (
+                      <>
+                        {/* Flavors Select section */}
+                        {possibleFlavors.length > 0 && (
+                          <div className="space-y-1 bg-stone-50 p-2 border border-stone-150 rounded-lg">
+                            <label className="text-[8.5px] uppercase tracking-wider text-stone-500 font-bold block">
+                              Select Common Flavor:
+                            </label>
+                            <select
+                              value={currentFlavor}
+                              onChange={(e) => handleFlavorChange(item.id, e.target.value)}
+                              className="w-full text-[11px] border border-stone-200 bg-white rounded px-2 py-1 focus:outline-none focus:border-gold py-1.5 font-medium text-stone-800"
+                            >
+                              {possibleFlavors.map((flv) => (
+                                <option key={flv} value={flv}>
+                                  ✨ {flv}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Quantity Selector Module with +- Buttons */}
+                        <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+                          <span className="text-[9px] uppercase tracking-wider text-stone-400 font-bold">
+                            Adjust Quantity:
+                          </span>
+                          <div className="flex items-center border border-stone-200 bg-neutral-50 rounded-xs overflow-hidden h-9">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, -1)}
+                              className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
+                              aria-label="Decrease"
+                            >
+                              -
+                            </button>
+                            <span className="px-3.5 text-xs font-bold text-stone-950 font-mono w-8 text-center">
+                              {qtySelected}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, 1)}
+                              className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
+                              aria-label="Increase"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </>
                     )}
-
-                    {/* Quantity Selector Module with +- Buttons */}
-                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-                      <span className="text-[9px] uppercase tracking-wider text-stone-400 font-bold">
-                        Adjust Quantity:
-                      </span>
-                      <div className="flex items-center border border-stone-200 bg-neutral-50 rounded-xs overflow-hidden h-9">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
-                          aria-label="Decrease"
-                        >
-                          -
-                        </button>
-                        <span className="px-3.5 text-xs font-bold text-stone-950 font-mono w-8 text-center">
-                          {qtySelected}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
-                          aria-label="Increase"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               );

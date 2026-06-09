@@ -11,7 +11,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Golden Buttermilk Scones",
     category: Category.BAKERY_BUCKETS,
     description: "Famous South African high-tea buttery scones. Soft on the inside, golden on the outside. Served plain - perfect with fresh whipped cream, jam, and grated cheddar cheese.",
-    image: "./images/buttermilk_scones.png",
+    image: "/src/assets/images/scones_bucket_new_1780975055905.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -30,10 +30,10 @@ export const MENU_ITEMS: MenuItem[] = [
   },
   {
     id: "muffins-bucket",
-    name: "Gourmet Cappuccino Morning Muffins",
+    name: "Gourmet Morning Muffins",
     category: Category.BAKERY_BUCKETS,
-    description: "A freshly baked premium selection of moist, fluffy gourmet cappuccino-infused mini muffins, dusted with fine chocolate and real cocoa powder. Pure morning indulgence.",
-    image: "./images/morning_muffins.png",
+    description: "A freshly baked premium selection of moist, fluffy gourmet mini muffins, dusted with fine chocolate and real cocoa powder. Pure morning indulgence.",
+    image: "/src/assets/images/muffins_bucket_new_1780975069955.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -54,8 +54,8 @@ export const MENU_ITEMS: MenuItem[] = [
     id: "biscuits-bucket",
     name: "Traditional South African Butter Biscuits",
     category: Category.BAKERY_BUCKETS,
-    description: "Rich melt-in-the-mouth pure butter cookies, beautifully piped and decorated with cherries, chocolate drops, or coconut flakes. Ideal for family gatherings and tea time.",
-    image: "./images/biscuits_assorted.png",
+    description: "Rich melt-in-the-mouth pure butter biscuits. A special bakery assortment combining plain butter crisps, cherry-crowned stars, rich chocolate-dipped shortbreads, festive 100s & 1000s sprinkles, and elegant piped swirls.",
+    image: "/src/assets/images/biscuits_bucket_new_1780975085698.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -77,7 +77,7 @@ export const MENU_ITEMS: MenuItem[] = [
     name: "Traditional Handmade Buttermilk Rusks",
     category: Category.BAKERY_BUCKETS,
     description: "Traditional chunky South African double-baked buttermilk rusks. Crafted with premium farm-fresh buttermilk and healthy seeds, perfectly crunchy and ready to dunk in warm coffee or tea.",
-    image: "./images/rusks_pack.png",
+    image: "/src/assets/images/rusks_bucket_new_1780975098836.png",
     isBucket: true,
     basePrice: 0,
     bucketPrices: {
@@ -114,7 +114,8 @@ export const MENU_ITEMS: MenuItem[] = [
       "10L": "90 Pieces Grand Tub",
       "20L": "180 Pieces Mega Banqueting Tub"
     },
-    badge: "Signature Logo Item"
+    badge: "Signature Logo Item",
+    isComingSoon: true
   },
   {
     id: "koeksisters-deluxe",

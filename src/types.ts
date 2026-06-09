@@ -22,6 +22,7 @@ export interface MenuItem {
   bucketPrices?: Record<BucketSize, number>; // Mapping size to price
   approxQuantity?: Record<BucketSize, string>; // e.g., "12-15 pieces"
   badge?: string;
+  isComingSoon?: boolean;
 }
 
 export interface CartItem {

@@ -20,8 +20,8 @@ interface OrderingSystemProps {
 
 const BUCKET_FLAVOR_OPTIONS: Record<string, string[]> = {
   "scones-bucket": ["Classic Buttermilk Only", "Sweet Sultana Infusion", "Savory Cheese & Herbs", "Mixed Assortment (Sweet & Savory)"],
-  "muffins-bucket": ["Cappuccino Chocolate", "Harvest Bran & Raisin", "Double Belgian Chocolate", "Lemon Poppy Seed Splash", "Assorted Morning Feast"],
-  "biscuits-bucket": ["Traditional Butter Swirl", "Coconut Crunch & Cherry", "Dipped Belgian Dark Bark", "Assorted Heritage Box"],
+  "muffins-bucket": ["Classic Chocolate Chips", "Harvest Bran & Raisin", "Double Belgian Chocolate", "Lemon Poppy Seed Splash", "Assorted Morning Feast"],
+  "biscuits-bucket": ["Signature Premium Mixture (Plain, Cherry, Choc, 100s & 1000s, Piped)", "Traditional Butter Swirl", "Cherry Crowned Mix", "Choc-Dipped & Sprinkles Only"],
   "rusks-bucket": ["Classic Farm Buttermilk", "Roasted Almond & Seed", "Assorted Dip Platter"],
   "gourmet-macarons": ["Traditional Pastel Mix", "Belgian Dark Choc & Strawberry", "Cream Caramel & Pistachio"],
   "koeksisters-deluxe": ["Traditional Spice Syrup", "Golden Ginger & Citrus Syrup"],
@@ -56,8 +56,8 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
   // Track flavor selections per bucket item IDs
   const [flavorSelection, setFlavorSelection] = useState<Record<string, string>>({
     "scones-bucket": "Classic Buttermilk Only",
-    "muffins-bucket": "Cappuccino Chocolate",
-    "biscuits-bucket": "Traditional Butter Swirl",
+    "muffins-bucket": "Classic Chocolate Chips",
+    "biscuits-bucket": "Signature Premium Mixture (Plain, Cherry, Choc, 100s & 1000s, Piped)",
     "rusks-bucket": "Classic Farm Buttermilk",
     "gourmet-macarons": "Traditional Pastel Mix",
     "koeksisters-deluxe": "Traditional Spice Syrup",
@@ -179,14 +179,43 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  {item.badge && (
+                  {item.badge && !item.isComingSoon && (
                     <span className="absolute top-0 left-0 bg-black text-white px-3 py-1.5 text-[8px] font-extrabold uppercase tracking-[0.2em] border-r border-b border-gold">
                       {item.badge}
                     </span>
                   )}
 
+                  {/* Brand Logo Sticker Overlay (outside the bucket) */}
+                  {!item.isComingSoon && (
+                    <div className="absolute top-3 right-3 z-10 select-none transition-transform group-hover:scale-110 duration-300">
+                      <div className="relative h-11 w-11 overflow-hidden rounded-full border border-gold bg-white p-0.5 shadow-md flex items-center justify-center">
+                        <img 
+                          src="./images/logo.png" 
+                          alt="Nems Authentic Seal" 
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Coming Soon overlay screen */}
+                  {item.isComingSoon && (
+                    <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4 z-20">
+                      <div className="mb-2 h-12 w-12 rounded-full border border-gold bg-white p-1 flex items-center justify-center shadow-lg">
+                        <img src="./images/logo.png" alt="Nems Logo" className="h-full w-full object-contain" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.25em] bg-stone-100 text-stone-950 border border-gold px-3 py-1.5 shadow-md">
+                        Coming Soon
+                      </span>
+                      <span className="text-white text-xs mt-2 font-serif italic text-gold/90">
+                        Not Available
+                      </span>
+                    </div>
+                  )}
+
                   {/* Pastel overlay accents based on specific items (macarons) */}
-                  {item.id === "gourmet-macarons" && (
+                  {item.id === "gourmet-macarons" && !item.isComingSoon && (
                     <div className="absolute top-3 right-3 flex space-x-1.5 bg-white/90 backdrop-blur-xs p-1 border border-gold">
                       <span className="h-4 w-4 rounded-full bg-[#ECA1A6] border border-white" title="Rose macaron style" />
                       <span className="h-4 w-4 rounded-full bg-[#A6E3E9] border border-white" title="Mint blue macaron style" />
@@ -205,124 +234,143 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
                     </p>
                   </div>
 
-                  {/* Size Selectors (for 2L, 5L, 10L, 20L Buckets) */}
-                  {isBucketVariant && item.bucketPrices && (
-                    <div className="space-y-3 bg-neutral-50 p-4 border border-gold/40">
-                      <span className="text-[9px] uppercase font-bold tracking-[0.15em] text-gold block">
-                        Select Bucket Volume
-                      </span>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {(["2L", "5L", "10L", "20L"] as BucketSize[]).map((size) => (
-                          <button
-                            key={size}
-                            onClick={() => handleSizeChange(item.id, size)}
-                            className={`py-2 text-xs font-bold transition-all border ${
-                              currentSize === size
-                                ? "bg-black text-white border-black font-black"
-                                : "bg-white text-stone-700 border-stone-200 hover:border-gold"
-                            }`}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Approximate Scone/Cookie count indication */}
-                      {quantityText && (
-                        <div className="flex items-center space-x-1.5 text-[10px] text-stone-500 font-semibold tracking-wide">
-                          <Sparkles className="h-3.5 w-3.5 text-gold shrink-0" />
-                          <span>Yields <strong className="text-stone-900">{quantityText}</strong></span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                   {/* Flavor selector for goods with different common flavors */}
-                   {BUCKET_FLAVOR_OPTIONS[item.id] && BUCKET_FLAVOR_OPTIONS[item.id].length > 1 && (
-                     <div className="space-y-1.5 bg-amber-50/20 p-3.5 border border-gold/30 rounded-lg">
-                       <label className="text-[9px] font-extrabold text-stone-900 uppercase tracking-widest block font-sans">
-                         Choose Baked Flavor
-                       </label>
-                       <select
-                         value={flavorSelection[item.id] || BUCKET_FLAVOR_OPTIONS[item.id][0]}
-                         onChange={(e) => handleFlavorChange(item.id, e.target.value)}
-                         className="w-full text-xs border border-stone-200 rounded px-2.5 py-2.5 bg-white text-stone-950 font-semibold focus:outline-none focus:border-gold cursor-pointer"
-                       >
-                         {BUCKET_FLAVOR_OPTIONS[item.id].map((flv) => (
-                           <option key={flv} value={flv}>
-                             ✨ {flv}
-                           </option>
-                         ))}
-                       </select>
-                     </div>
-                   )}
-
-                  {/* Special note input */}
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-extrabold text-[#C5A028] uppercase tracking-widest block">
-                      Preparation Notes (Allergy / Accommodations)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Bake soft, label gluten-free items..."
-                      value={specialNotes[item.id] || ""}
-                      onChange={(e) => setSpecialNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                      className="w-full text-xs border border-stone-200 px-2.5 py-2.5 focus:outline-none focus:border-gold placeholder-stone-400 text-stone-950 bg-neutral-50"
-                    />
-                  </div>
-
-                  {/* Quantity & Actions and validation for Minimum orders */}
-                  <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-[0.15em] text-stone-500 block">Total Est.</span>
-                      <span className="text-xl font-bold font-serif text-ink italic block">
-                        R {price * currentQty}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      {/* Quantity Selector */}
-                      <div className="flex items-center border border-stone-200 bg-neutral-50 overflow-hidden h-9">
-                        <button
-                          onClick={() => handleQuantityChange(item.id, currentQty - 1, isMin10 ? 10 : 1)}
-                          className="px-2.5 text-stone-600 hover:bg-stone-100 font-bold"
-                        >
-                          -
-                        </button>
-                        <span className="px-2 text-xs font-semibold text-stone-900 font-mono">
-                          {currentQty}
-                        </span>
-                        <button
-                          onClick={() => handleQuantityChange(item.id, currentQty + 1)}
-                          className="px-2.5 text-stone-600 hover:bg-stone-100 font-bold"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      {/* Submit to Bag Button */}
+                  {item.isComingSoon ? (
+                    <div className="bg-stone-50 p-4 border border-dashed border-stone-200 text-center rounded-xl mt-auto space-y-3">
+                      <p className="text-xs text-stone-500 font-medium leading-relaxed">
+                        Our premium luxury macarons are currently offline as we upgrade our artisanal baking infrastructure.
+                      </p>
                       <button
-                        onClick={() => executeAddToBag(item)}
-                        className={`flex h-9 items-center justify-center px-4 text-xs font-extrabold uppercase tracking-widest transition-all ${
-                          addedItemFeedback[item.id]
-                            ? "bg-[#A6E3E9] text-stone-950 font-bold"
-                            : "bg-gold text-white hover:bg-black"
-                        }`}
+                        disabled
+                        className="w-full bg-stone-200 text-stone-400 py-3 text-xs font-extrabold uppercase tracking-widest cursor-not-allowed border border-stone-300/30 rounded-lg"
                       >
-                        {addedItemFeedback[item.id] ? (
-                          <span className="flex items-center space-x-1">
-                            <Check className="h-4 w-4 shrink-0 stroke-[3]" />
-                            <span>In Bag</span>
-                          </span>
-                        ) : (
-                          <span className="flex items-center space-x-1">
-                            <ShoppingBag className="h-3.5 w-3.5 shrink-0" />
-                            <span>Add</span>
-                          </span>
-                        )}
+                        Coming Soon
                       </button>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      {/* Normal layout elements wrap */}
+                      <div className="space-y-4 flex-1 flex flex-col justify-between">
+                        {/* Size Selectors (for 2L, 5L, 10L, 20L Buckets) */}
+                        {isBucketVariant && item.bucketPrices && (
+                          <div className="space-y-3 bg-neutral-50 p-4 border border-gold/40">
+                            <span className="text-[9px] uppercase font-bold tracking-[0.15em] text-gold block">
+                              Select Bucket Volume
+                            </span>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {(["2L", "5L", "10L", "20L"] as BucketSize[]).map((size) => (
+                                <button
+                                  key={size}
+                                  onClick={() => handleSizeChange(item.id, size)}
+                                  className={`py-2 text-xs font-bold transition-all border ${
+                                    currentSize === size
+                                      ? "bg-black text-white border-black font-black"
+                                      : "bg-white text-stone-700 border-stone-200 hover:border-gold"
+                                  }`}
+                                >
+                                  {size}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Approximate Scone/Cookie count indication */}
+                            {quantityText && (
+                              <div className="flex items-center space-x-1.5 text-[10px] text-stone-500 font-semibold tracking-wide">
+                                <Sparkles className="h-3.5 w-3.5 text-gold shrink-0" />
+                                <span>Yields <strong className="text-stone-900">{quantityText}</strong></span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                         {/* Flavor selector for goods with different common flavors */}
+                         {BUCKET_FLAVOR_OPTIONS[item.id] && BUCKET_FLAVOR_OPTIONS[item.id].length > 1 && (
+                           <div className="space-y-1.5 bg-amber-50/20 p-3.5 border border-gold/30 rounded-lg">
+                             <label className="text-[9px] font-extrabold text-stone-900 uppercase tracking-widest block font-sans">
+                               Choose Baked Flavor
+                             </label>
+                             <select
+                               value={flavorSelection[item.id] || BUCKET_FLAVOR_OPTIONS[item.id][0]}
+                               onChange={(e) => handleFlavorChange(item.id, e.target.value)}
+                               className="w-full text-xs border border-stone-200 rounded px-2.5 py-2.5 bg-white text-stone-950 font-semibold focus:outline-none focus:border-gold cursor-pointer"
+                             >
+                               {BUCKET_FLAVOR_OPTIONS[item.id].map((flv) => (
+                                 <option key={flv} value={flv}>
+                                   ✨ {flv}
+                                 </option>
+                               ))}
+                             </select>
+                           </div>
+                         )}
+
+                        {/* Special note input */}
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-extrabold text-[#C5A028] uppercase tracking-widest block">
+                            Preparation Notes (Allergy / Accommodations)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Bake soft, label gluten-free items..."
+                            value={specialNotes[item.id] || ""}
+                            onChange={(e) => setSpecialNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                            className="w-full text-xs border border-stone-200 px-2.5 py-2.5 focus:outline-none focus:border-gold placeholder-stone-400 text-stone-950 bg-neutral-50"
+                          />
+                        </div>
+
+                        {/* Quantity & Actions and validation for Minimum orders */}
+                        <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
+                          <div>
+                            <span className="text-[9px] uppercase tracking-[0.15em] text-stone-500 block">Total Est.</span>
+                            <span className="text-xl font-bold font-serif text-ink italic block">
+                              R {price * currentQty}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            {/* Quantity Selector */}
+                            <div className="flex items-center border border-stone-200 bg-neutral-50 overflow-hidden h-9">
+                              <button
+                                onClick={() => handleQuantityChange(item.id, currentQty - 1, isMin10 ? 10 : 1)}
+                                className="px-2.5 text-stone-600 hover:bg-stone-100 font-bold"
+                              >
+                                -
+                              </button>
+                              <span className="px-2 text-xs font-semibold text-stone-900 font-mono">
+                                {currentQty}
+                              </span>
+                              <button
+                                onClick={() => handleQuantityChange(item.id, currentQty + 1)}
+                                className="px-2.5 text-stone-600 hover:bg-stone-100 font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {/* Submit to Bag Button */}
+                            <button
+                              onClick={() => executeAddToBag(item)}
+                              className={`flex h-9 items-center justify-center px-4 text-xs font-extrabold uppercase tracking-widest transition-all ${
+                                addedItemFeedback[item.id]
+                                  ? "bg-[#A6E3E9] text-stone-950 font-bold"
+                                  : "bg-gold text-white hover:bg-black"
+                              }`}
+                            >
+                              {addedItemFeedback[item.id] ? (
+                                <span className="flex items-center space-x-1">
+                                  <Check className="h-4 w-4 shrink-0 stroke-[3]" />
+                                  <span>In Bag</span>
+                                </span>
+                              ) : (
+                                <span className="flex items-center space-x-1">
+                                  <ShoppingBag className="h-3.5 w-3.5 shrink-0" />
+                                  <span>Add</span>
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Snack-box specific alert for validation */}
                   {isMin10 && (

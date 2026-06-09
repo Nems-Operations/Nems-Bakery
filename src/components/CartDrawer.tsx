@@ -5,7 +5,7 @@
 
 import { useState, useMemo, FormEvent } from "react";
 import { CartItem } from "../types";
-import { X, Trash2, ShoppingBag, Truck, MapPin, CheckCircle, Clock } from "lucide-react";
+import { X, Trash2, ShoppingBag, Truck, CheckCircle, Clock } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 
@@ -35,6 +35,11 @@ export default function CartDrawer({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<"standard" | "cod">("standard");
 
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: "percentage" | "amount"; value: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+
   const smallTreatItems = useMemo(() => {
     return cartItems.filter(item => item.menuItem.id.startsWith("retail-") || item.menuItem.id === "daily-muffin" || item.menuItem.id === "daily-cupcake");
   }, [cartItems]);
@@ -45,10 +50,6 @@ export default function CartDrawer({
 
   const hasSmallOrders = smallTreatItems.length > 0;
   const hasNormalOrders = normalBakeItems.length > 0;
-
-  const isOnlySmallOrders = useMemo(() => {
-    return cartItems.length > 0 && cartItems.every(item => item.menuItem.id.startsWith("retail-") || item.menuItem.id === "daily-muffin" || item.menuItem.id === "daily-cupcake");
-  }, [cartItems]);
 
   const deliveryFee = deliveryMethod === "delivery" ? 120 : 0;
 
@@ -61,18 +62,36 @@ export default function CartDrawer({
   }, [normalBakeItems]);
 
   const orderCalculations = useMemo(() => {
-    const subtotal = smallSubtotal + normalSubtotal;
-    const vat = Math.round((subtotal * 0.15) * 100) / 100;
-    const total = Math.round((subtotal + vat + deliveryFee) * 100) / 100;
+    const subtotal = Math.max(0, smallSubtotal + normalSubtotal);
     
-    const smallVat = Math.round((smallSubtotal * 0.15) * 100) / 100;
-    const normalVat = Math.round((normalSubtotal * 0.15) * 100) / 100;
+    let discount = 0;
+    if (appliedCoupon) {
+      if (appliedCoupon.type === "percentage") {
+        discount = Math.round((subtotal * (appliedCoupon.value / 100)) * 100) / 100;
+      } else if (appliedCoupon.type === "amount") {
+        discount = Math.min(subtotal, appliedCoupon.value);
+      }
+    }
+
+    const subtotalAfterDiscount = Math.max(0, subtotal - discount);
+    const vat = Math.round((subtotalAfterDiscount * 0.15) * 100) / 100; // SA VAT (15%)
+    const total = Math.round((subtotalAfterDiscount + vat + deliveryFee) * 100) / 100;
     
-    const codTotal = Math.round((smallSubtotal + smallVat) * 100) / 100;
-    const eftTotal = Math.round((normalSubtotal + normalVat + deliveryFee) * 100) / 100;
+    const discountRatio = subtotal > 0 ? (subtotalAfterDiscount / subtotal) : 1;
+    
+    const discountedSmallSubtotal = smallSubtotal * discountRatio;
+    const discountedNormalSubtotal = normalSubtotal * discountRatio;
+    
+    const smallVat = Math.round((discountedSmallSubtotal * 0.15) * 100) / 100;
+    const normalVat = Math.round((discountedNormalSubtotal * 0.15) * 100) / 100;
+    
+    const codTotal = Math.round((discountedSmallSubtotal + smallVat) * 100) / 100;
+    const eftTotal = Math.round((discountedNormalSubtotal + normalVat + deliveryFee) * 100) / 100;
     
     return { 
       subtotal, 
+      discount,
+      subtotalAfterDiscount,
       vat, 
       total,
       smallVat,
@@ -80,7 +99,50 @@ export default function CartDrawer({
       codTotal,
       eftTotal
     };
-  }, [smallSubtotal, normalSubtotal, deliveryFee]);
+  }, [smallSubtotal, normalSubtotal, deliveryFee, appliedCoupon]);
+
+  const handleApplyCoupon = (code: string) => {
+    const uppercaseCode = code.trim().toUpperCase();
+    if (!uppercaseCode) {
+      setCouponError("Please type or enter a coupon promo code");
+      setCouponSuccess(null);
+      return;
+    }
+
+    if (uppercaseCode === "NEMS20") {
+      setAppliedCoupon({ code: "NEMS20", type: "percentage", value: 20 });
+      setCouponSuccess("NEMS20 applied! Enjoy 20% off your entire bag!");
+      setCouponError(null);
+    } else if (uppercaseCode === "TREAT50") {
+      setAppliedCoupon({ code: "TREAT50", type: "amount", value: 50 });
+      setCouponSuccess("TREAT50 applied! R50.00 cash voucher holds!");
+      setCouponError(null);
+    } else if (uppercaseCode === "LOBOLA15") {
+      setAppliedCoupon({ code: "LOBOLA15", type: "percentage", value: 15 });
+      setCouponSuccess("LOBOLA15 applied! Scone celebrations active with 15% off!");
+      setCouponError(null);
+    } else if (uppercaseCode === "BREAD100") {
+      const subtotalVal = smallSubtotal + normalSubtotal;
+      if (subtotalVal < 500) {
+        setCouponError("BREAD100 requires a minimum order subtotal of R 500.00");
+        setCouponSuccess(null);
+      } else {
+        setAppliedCoupon({ code: "BREAD100", type: "amount", value: 100 });
+        setCouponSuccess("BREAD100 applied! R100.00 cash voucher subtracted!");
+        setCouponError(null);
+      }
+    } else {
+      setCouponError("Unknown coupon code. Please verify.");
+      setCouponSuccess(null);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponSuccess(null);
+    setCouponError(null);
+    setCouponInput("");
+  };
 
   const handleCheckoutSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -109,7 +171,6 @@ export default function CartDrawer({
     const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
     const path = "orders";
 
-    // Detect payment mode (cod for small treats; eft for catering/bulk)
     let finalPaymentMode = "standard";
     if (hasSmallOrders) {
       if (paymentMethod === "cod") {
@@ -150,6 +211,7 @@ export default function CartDrawer({
     setCustomerName("");
     setCustomerPhone("");
     setAddress("");
+    handleRemoveCoupon();
     onClose();
   };
 
@@ -261,16 +323,16 @@ export default function CartDrawer({
                   </button>
                 </div>
               ) : (
-                // Active Cart list with checkout form
-                <div className="space-y-6">
-                  {/* Cart Items List separated */}
+                // Unified Cart & Checkout View
+                <form onSubmit={handleCheckoutSubmit} className="space-y-6">
+                  {/* Part 1: Bag Contents and Controllers */}
                   <div className="space-y-4">
-                    {/* 1. Small Daily Treats Section */}
+                    {/* Small Daily Treats Section */}
                     {hasSmallOrders && (
                       <div className="space-y-2 border border-amber-100 bg-amber-50/10 p-3 rounded-lg">
                         <span className="text-[10px] uppercase font-black text-[#C5A028] block tracking-wide flex items-center space-x-1">
                           <span>🧁</span>
-                          <span>Daily Treats & Small Bites (Cash Option Eligible)</span>
+                          <span>Daily Treats &amp; Small Bites (Cash Option Eligible)</span>
                         </span>
                         <div className="space-y-2.5 divide-y divide-stone-100">
                           {smallTreatItems.map((item, idx) => (
@@ -342,17 +404,17 @@ export default function CartDrawer({
                           ))}
                         </div>
                         <div className="text-right text-[10px] text-stone-500 border-t border-stone-100/60 pt-1.5 font-bold">
-                          Treats Subtotal: <span className="text-stone-900 font-mono">R {smallSubtotal}</span>
+                          Treats Subtotal: <span className="text-stone-900 font-mono">R {smallSubtotal.toFixed(2)}</span>
                         </div>
                       </div>
                     )}
 
-                    {/* 2. Normal Bulk / Catering / Bucket Section */}
+                    {/* Bulk Bakery buckets or custom catering */}
                     {hasNormalOrders && (
                       <div className="space-y-2 border border-stone-200 p-3 rounded-lg">
                         <span className="text-[10px] uppercase font-black text-stone-500 block tracking-wide flex items-center space-x-1">
                           <span>🎂</span>
-                          <span>Bakery Buckets & Bulk Catering</span>
+                          <span>Bakery Buckets &amp; Bulk Catering</span>
                         </span>
                         <div className="space-y-2.5 divide-y divide-stone-100">
                           {normalBakeItems.map((item, idx) => (
@@ -378,7 +440,7 @@ export default function CartDrawer({
                                       </span>
                                     )}
                                     {item.selectedFlavor && (
-                                      <span className="inline-block rounded bg-amber-100 px-1 py-0.5 text-[8.5px] font-bold text-[#C5A028] border border-gold/30">
+                                      <span className="inline-block rounded bg-amber-105 px-1 py-0.5 text-[8.5px] font-bold text-[#C5A028] border border-gold/30">
                                         Flavor: {item.selectedFlavor}
                                       </span>
                                     )}
@@ -429,16 +491,123 @@ export default function CartDrawer({
                           ))}
                         </div>
                         <div className="text-right text-[10px] text-stone-500 border-t border-stone-100/60 pt-1.5 font-bold">
-                          Bulk Subtotal: <span className="text-stone-900 font-mono">R {normalSubtotal}</span>
+                          Bulk Subtotal: <span className="text-stone-900 font-mono">R {normalSubtotal.toFixed(2)}</span>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Booking / Checkout Details Form (Gold / White background) */}
-                  <form onSubmit={handleCheckoutSubmit} className="border-t border-stone-200 pt-5 space-y-4">
+                  {/* Part 2: Coupon section (blank space directly above the subtotal) */}
+                  <div className="pt-4 border-t border-stone-100 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] uppercase font-bold text-stone-400 tracking-wider">
+                      <span>Have a Promo Coupon?</span>
+                      <span className="text-[#C5A028] font-bold">Apply Coupon</span>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder="Enter Code (e.g. NEMS20, TREAT50, LOBOLA15)"
+                        value={couponInput}
+                        onChange={(e) => {
+                          setCouponInput(e.target.value);
+                          setCouponError(null);
+                        }}
+                        className="flex-1 text-xs border border-stone-200 px-3 py-2.5 rounded-lg uppercase tracking-wider font-mono focus:outline-none focus:border-[#D4AF37] placeholder-stone-400 text-stone-950 bg-stone-50/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleApplyCoupon(couponInput)}
+                        className="bg-stone-950 hover:bg-[#D4AF37] text-white hover:text-stone-900 px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all"
+                      >
+                        Apply
+                      </button>
+                    </div>
+
+                    {couponError && (
+                      <p className="text-[10px] text-rose-500 font-bold mt-1 bg-rose-50 p-2 border border-rose-150 rounded-md">
+                        ⚠️ {couponError}
+                      </p>
+                    )}
+
+                    {couponSuccess && (
+                      <div className="bg-emerald-50 border border-emerald-150 p-2.5 rounded-md text-[10px] text-emerald-850 font-semibold flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <p className="font-bold">✓ {couponSuccess}</p>
+                          <span className="text-[9px] text-[#C5A028] font-bold block">
+                            -{appliedCoupon?.type === 'percentage' ? `${appliedCoupon.value}%` : `R ${appliedCoupon?.value.toFixed(2)}`} reduction holds!
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-stone-500 hover:text-rose-600 underline font-black uppercase tracking-wider text-[8px] pl-2 whitespace-nowrap"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Part 3: Subtotal & Total Dashboard Card */}
+                  <div className="bg-stone-50 p-4 rounded-xl space-y-2.5 border border-stone-200/40 text-xs text-stone-800">
+                    <div className="flex justify-between text-[11px] text-stone-500">
+                      <span>Items Subtotal (Excl. VAT):</span>
+                      <span className="font-mono">R {orderCalculations.subtotal.toFixed(2)}</span>
+                    </div>
+
+                    {/* ONLY appears once appliedCoupon is valid */}
+                    {appliedCoupon && (
+                      <div className="flex justify-between text-[11px] text-[#C5A028] font-bold border-t border-stone-150/40 pt-2">
+                        <span>Coupon Discount Applied:</span>
+                        <span className="font-mono">-R {orderCalculations.discount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    
+                    {deliveryFee > 0 && (
+                      <div className="flex justify-between text-[11px] text-stone-500">
+                        <span>🚚 Courier Fee:</span>
+                        <strong className="text-stone-800 font-mono">R {deliveryFee.toFixed(2)}</strong>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between text-[11px] text-stone-500 border-t border-stone-150 pt-2">
+                      <span>🇿🇦 SA VAT Included (15%):</span>
+                      <span className="font-mono">R {orderCalculations.vat.toFixed(2)}</span>
+                    </div>
+
+                    {/* Split COD payments vs Combined total display */}
+                    {hasSmallOrders && hasNormalOrders && paymentMethod === "cod" ? (
+                      <div className="border-t border-dashed border-stone-200 pt-2.5 space-y-1.5 font-bold">
+                        <div className="flex justify-between text-yellow-850 bg-amber-50/50 p-1.5 rounded text-[11px] border border-amber-100">
+                          <span>💵 Daily Treats (COD Due, Incl. VAT):</span>
+                          <span className="font-mono">R {orderCalculations.codTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-stone-700 p-1.5 rounded text-[11px] bg-stone-100 border border-stone-200">
+                          <span>🎂 Bulk Catering (EFT Due, Incl. VAT):</span>
+                          <span className="font-mono">R {orderCalculations.eftTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-stone-200 pt-1.5 text-xs text-stone-900 bg-[#FDFAF5] p-1.5 border border-gold/30">
+                          <span>Total Package Price (VAT Incl.):</span>
+                          <strong className="font-mono text-gold">R {orderCalculations.total.toFixed(2)}</strong>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between border-t border-[#D4AF37]/30 pt-2 text-sm bg-[#FDFAF5] p-2 border border-gold/30 rounded">
+                        <span className="font-bold text-stone-950 font-serif">
+                          {paymentMethod === "cod" ? "COD Total (VAT Incl.):" : "Combined Total (VAT Incl.):"}
+                        </span>
+                        <strong className="font-black text-[#D4AF37] font-serif font-mono text-base">
+                          R {orderCalculations.total.toFixed(2)}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Part 4: FULFILLMENT COORDINATES & SUBMIT BUTTON */}
+                  <div className="border-t border-stone-200 pt-5 space-y-4">
                     <span className="text-[10px] uppercase font-bold text-stone-400 block tracking-widest">
-                      Fulfillment Specs:
+                      Fulfillment Specs &amp; Delivery:
                     </span>
 
                     {/* Collection Mode Checkboxes */}
@@ -454,7 +623,6 @@ export default function CartDrawer({
                       >
                         Free Pickup
                       </button>
-
                       <button
                         type="button"
                         onClick={() => setDeliveryMethod("delivery")}
@@ -507,7 +675,7 @@ export default function CartDrawer({
                         </div>
                       )}
 
-                      {/* Cash upon delivery selector inside checkout form (appears if any small retail treats exist) */}
+                      {/* Cash Option if relevant */}
                       {hasSmallOrders && (
                         <div className="space-y-2 pt-1 border border-amber-100 bg-amber-50/10 p-2.5 rounded-lg">
                           <label className="text-[9px] uppercase font-bold text-[#C5A028] block mb-1">
@@ -540,58 +708,11 @@ export default function CartDrawer({
                           <p className="text-[10px] text-stone-500 bg-stone-50/50 p-2 border border-stone-100/50 italic rounded">
                             {paymentMethod === "cod" 
                               ? (hasNormalOrders 
-                                ? `Treat elements (R ${smallSubtotal}) paid via Cash upon arrival. Large Catering / Bucket order requires EFT confirmation before prep.`
+                                ? `Treat components (R ${orderCalculations.codTotal.toFixed(2)}) paid via Cash upon arrival. Large Catering / Bucket order requires EFT confirmation before prep.`
                                 : `Prepare clean cash matching your total of R ${orderCalculations.total} on arrival.`
                                 )
                               : "Settle everything altogether using credit card/instant bank EFT transfer."}
                           </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Payment Calculator details */}
-                    <div className="bg-stone-50 p-4 rounded-xl space-y-2.5 border border-stone-200/40 text-xs text-stone-800">
-                      <div className="flex justify-between text-[11px] text-stone-500">
-                        <span>Items Subtotal (Excl. VAT):</span>
-                        <span className="font-mono">R {(smallSubtotal + normalSubtotal).toFixed(2)}</span>
-                      </div>
-                      
-                      {deliveryFee > 0 && (
-                        <div className="flex justify-between text-[11px] text-stone-500">
-                          <span>🚚 Courier Fee:</span>
-                          <strong className="text-stone-800 font-mono">R {deliveryFee.toFixed(2)}</strong>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between text-[11px] text-[#C5A028] font-bold border-t border-stone-150 pt-2">
-                        <span>🇿🇦 South African VAT (15%):</span>
-                        <span className="font-mono">R {orderCalculations.vat.toFixed(2)}</span>
-                      </div>
-
-                      {/* Split displays vs combined display */}
-                      {hasSmallOrders && hasNormalOrders && paymentMethod === "cod" ? (
-                        <div className="border-t border-dashed border-stone-200 pt-2.5 space-y-1.5 font-bold">
-                          <div className="flex justify-between text-yellow-850 bg-amber-50/50 p-1.5 rounded text-[11px] border border-amber-100">
-                            <span>💵 Daily Treats (COD Due + 15% VAT):</span>
-                            <span className="font-mono">R {orderCalculations.codTotal.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-stone-700 p-1.5 rounded text-[11px] bg-stone-100 border border-stone-200">
-                            <span>🎂 Bulk Catering (EFT Due + 15% VAT):</span>
-                            <span className="font-mono">R {orderCalculations.eftTotal.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between border-t border-stone-200 pt-1.5 text-xs text-stone-900 bg-[#FDFAF5] p-1.5 border border-gold/30">
-                            <span>Total Package Price (VAT Incl.):</span>
-                            <strong className="font-mono text-gold">R {orderCalculations.total.toFixed(2)}</strong>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between border-t border-[#D4AF37]/30 pt-2 text-sm bg-[#FDFAF5] p-2 border border-gold/30 rounded">
-                          <span className="font-bold text-stone-950 font-serif">
-                            {paymentMethod === "cod" ? "COD Total (VAT Incl.):" : "Combined Total (VAT Incl.):"}
-                          </span>
-                          <strong className="font-black text-[#D4AF37] font-serif font-mono text-base">
-                            R {orderCalculations.total.toFixed(2)}
-                          </strong>
                         </div>
                       )}
                     </div>
@@ -603,8 +724,8 @@ export default function CartDrawer({
                     >
                       <span>{submittingInvoice ? "Scheduling Oven Queue..." : "Confirm Store & Bake Order"}</span>
                     </button>
-                  </form>
-                </div>
+                  </div>
+                </form>
               )}
             </div>
 

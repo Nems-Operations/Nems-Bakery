@@ -16,7 +16,7 @@ const PREVIEW_ITEMS = [
     name: "Buttermilk Scone",
     price: 15.00,
     description: "Traditional high-crown flaky scone.",
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=600",
+    image: "./images/buttermilk_scones.png",
     badge: "Tea Favorite"
   },
   {
@@ -24,7 +24,7 @@ const PREVIEW_ITEMS = [
     name: "Classic Butter Rusk",
     price: 20.00,
     description: "Crunchy double-baked buttermilk dunker.",
-    image: "https://images.unsplash.com/photo-1558961313-7f8a9e557e4e?auto=format&fit=crop&q=80&w=600",
+    image: "./images/rusks_pack.png",
     badge: "Coffee Dunker"
   },
   {
@@ -48,7 +48,7 @@ const PREVIEW_ITEMS = [
     name: "Almond & Seed Rusk",
     price: 30.00,
     description: "Gourmet rusk with almonds & triple-seeds.",
-    image: "https://images.unsplash.com/photo-1598114858882-34fd0822699e?auto=format&fit=crop&q=80&w=600",
+    image: "./images/rusks_pack.png",
     badge: "Low Sugar"
   },
   {
@@ -56,24 +56,27 @@ const PREVIEW_ITEMS = [
     name: "Cherry Butter Biscuit",
     price: 10.00,
     description: "Traditional butter swirl with cherry dome.",
-    image: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&q=80&w=600",
-    badge: "Heritage Swirl"
+    image: "./images/biscuits_assorted.png",
+    badge: "Heritage Swirl",
+    isComingSoon: true
   },
   {
     id: "retail-biscuit-chocolate",
     name: "Chocolate Dipped Biscuit",
     price: 12.00,
     description: "Classic piped shortbread in Belgian dark choc.",
-    image: "https://images.unsplash.com/photo-1550617931-e17a7b70dce2?auto=format&fit=crop&q=80&w=600",
-    badge: "Dark Decadence"
+    image: "./images/biscuits_assorted.png",
+    badge: "Dark Decadence",
+    isComingSoon: true
   },
   {
     id: "retail-macaron-single",
     name: "Pastel Macaron",
     price: 18.00,
     description: "Delicate almond macaron with strawberry cream.",
-    image: "https://images.unsplash.com/photo-1569864358642-9d1684040f43?auto=format&fit=crop&q=80&w=600",
-    badge: "Award Winner"
+    image: "./images/gourmet_macarons.png",
+    badge: "Award Winner",
+    isComingSoon: true
   }
 ];
 
@@ -204,15 +207,29 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   
-                  {item.badge && (
+                  {item.badge && !item.isComingSoon && (
                     <span className="absolute top-2.5 left-2.5 bg-[#D4AF37]/90 backdrop-blur-xs text-white px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-sm">
                       {item.badge}
                     </span>
                   )}
 
-                  <span className="absolute bottom-2 right-2 bg-stone-950/80 backdrop-blur-xs text-white px-2.5 py-1 text-xs font-bold font-mono rounded-md">
-                    R {item.price.toFixed(2)}
-                  </span>
+                  {item.isComingSoon && (
+                    <div className="absolute inset-0 bg-stone-900/65 flex items-center justify-center p-2 text-center select-none z-10">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-stone-100 text-stone-950 border border-gold px-2 py-1 shadow-sm rounded-xs">
+                        Coming Soon
+                      </span>
+                    </div>
+                  )}
+
+                  {item.isComingSoon ? (
+                    <span className="absolute bottom-2 right-2 bg-stone-800/80 backdrop-blur-xs text-white px-2 py-0.5 text-[8px] font-bold rounded-md uppercase tracking-wide">
+                      Muted
+                    </span>
+                  ) : (
+                    <span className="absolute bottom-2 right-2 bg-stone-950/80 backdrop-blur-xs text-white px-2.5 py-1 text-xs font-bold font-mono rounded-md">
+                      R {item.price.toFixed(2)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Info and Call to Action */}
@@ -225,9 +242,9 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
                   </p>
                   
                   <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] font-bold text-stone-400 group-hover:text-stone-950 transition-colors uppercase tracking-wider">
-                    <span>Order Daily Fresh</span>
+                    <span>{item.isComingSoon ? "Arriving Soon" : "Order Daily Fresh"}</span>
                     <span className="flex items-center text-[#C5A028]">
-                      <span>Shop Now</span>
+                      <span>{item.isComingSoon ? "Unavailable" : "Shop Now"}</span>
                       <ArrowRight className="h-3.5 w-3.5 ml-1" />
                     </span>
                   </div>
