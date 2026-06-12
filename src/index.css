@@ -16,6 +16,11 @@ body {
   background-color: #FFFFFF;
 }
 
+/* Fix Yoco SDK checkout z-index trapping */
+iframe[src*="yoco"], div[id*="yoco"], div[class*="yoco"], #yoco-checkout-frame, .yoco-checkout-modal, #yoco-wrapper, .yoco-popup-container, .yoco-sdk-wrapper {
+  z-index: 999999 !important;
+}
+
 h1, h2, h3, h4, .serif {
   font-family: var(--font-serif);
 }

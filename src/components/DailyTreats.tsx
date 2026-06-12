@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { MenuItem, Category } from "../types";
+import { MenuItem, Category, CartItem } from "../types";
 import { Coffee, Sparkles, ShoppingBag, Check, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
 
 interface DailyTreatsProps {
@@ -15,6 +15,10 @@ interface DailyTreatsProps {
     specialInstructions?: string,
     selectedFlavor?: string
   ) => void;
+  cartItems: CartItem[];
+  onUpdateQty: (id: string, size: string | undefined, qty: number, flavor?: string) => void;
+  onRemoveItem: (id: string, size: string | undefined, flavor?: string) => void;
+  onOpenCart: () => void;
 }
 
 // 1. Defining the premium retail/daily small treats
@@ -124,7 +128,13 @@ const CUPCAKE_FLAVORS = [
   "Strawberry Milkshake Icing"
 ];
 
-export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
+export default function DailyTreats({
+  onAddToBag,
+  cartItems,
+  onUpdateQty,
+  onRemoveItem,
+  onOpenCart
+}: DailyTreatsProps) {
   // Active Tab for Muffins & Cupcakes sliding window
   const [activeTab, setActiveTab] = useState<"muffins" | "cupcakes">("muffins");
 
@@ -135,24 +145,6 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
   // Selection states for Custom Cupcake Pack builder
   const [selectedCupcakePack, setSelectedCupcakePack] = useState<number>(6);
   const [selectedCupcakeFlavor, setSelectedCupcakeFlavor] = useState<string>("Vanilla Velvet");
-
-  // Array of added customized items
-  const [customItems, setCustomItems] = useState<{
-    id: string;
-    item: MenuItem;
-    qty: number;
-    flavor: string;
-  }[]>([]);
-
-  // Quantities selected per standard retail item
-  const [quantities, setQuantities] = useState<Record<string, number>>({
-    "retail-scone": 0,
-    "retail-rusk-classic": 0,
-    "retail-rusk-seed": 0,
-    "retail-biscuit-cherry": 0,
-    "retail-biscuit-chocolate": 0,
-    "retail-macaron-single": 0,
-  });
 
   // Chosen flavors per standard retail item
   const [selectedItemFlavors, setSelectedItemFlavors] = useState<Record<string, string>>({
@@ -168,12 +160,35 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
   const [orderPlacedFeedback, setOrderPlacedFeedback] = useState(false);
   const [addedFeedbackMessage, setAddedFeedbackMessage] = useState("");
 
-  const updateQuantity = (id: string, delta: number) => {
-    setQuantities((prev) => {
-      const current = prev[id] || 0;
-      const next = Math.max(0, current + delta);
-      return { ...prev, [id]: next };
-    });
+  const getQtyInCart = (itemId: string) => {
+    const flavor = selectedItemFlavors[itemId] || "Original";
+    const found = cartItems.find(
+      (ci) => ci.menuItem.id === itemId && ci.selectedFlavor === flavor
+    );
+    return found ? found.quantity : 0;
+  };
+
+  const updateQuantity = (itemId: string, delta: number) => {
+    const item = SMALL_TREATS_ITEMS.find((it) => it.id === itemId);
+    if (!item) return;
+    const flavor = selectedItemFlavors[itemId] || "Original";
+    const existing = cartItems.find(
+      (ci) => ci.menuItem.id === itemId && ci.selectedFlavor === flavor
+    );
+    const currentQty = existing ? existing.quantity : 0;
+    const nextQty = Math.max(0, currentQty + delta);
+
+    if (nextQty === 0) {
+      if (existing) {
+        onRemoveItem(itemId, undefined, flavor);
+      }
+    } else {
+      if (existing) {
+        onUpdateQty(itemId, undefined, nextQty, flavor);
+      } else {
+        onAddToBag(item, nextQty, undefined, undefined, flavor);
+      }
+    }
   };
 
   const handleFlavorChange = (itemId: string, flavor: string) => {
@@ -236,46 +251,36 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
       const price = MUFFIN_PRICES[selectedMuffinPack];
       const flavor = selectedMuffinFlavor;
       
-      const newMuffinPack = {
-        id: `custom-muffin-${Date.now()}-${selectedMuffinPack}`,
-        item: {
-          id: "daily-muffin",
-          name: `Craft Muffin Pack (${selectedMuffinPack} Pcs)`,
-          category: Category.DESSERTS,
-          description: `Daily homemade oven-fresh muffins, hand-mixed using farm ingredients. Pack size: ${selectedMuffinPack}.`,
-          image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600",
-          isBucket: false,
-          basePrice: price,
-          badge: "Oven Hot Pack"
-        },
-        qty: 1,
-        flavor: flavor
+      const newMuffinPack: MenuItem = {
+        id: `daily-muffin-${selectedMuffinPack}`,
+        name: `Craft Muffin Pack (${selectedMuffinPack} Pcs)`,
+        category: Category.DESSERTS,
+        description: `Daily homemade oven-fresh muffins, hand-mixed using farm ingredients. Pack size: ${selectedMuffinPack}.`,
+        image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600",
+        isBucket: false,
+        basePrice: price,
+        badge: "Oven Hot Pack"
       };
 
-      setCustomItems((prev) => [...prev, newMuffinPack]);
-      setAddedFeedbackMessage(`Added ${selectedMuffinPack} Muffin Pack (${flavor}) for R ${price.toFixed(2)} to basket!`);
+      onAddToBag(newMuffinPack, 1, undefined, specialInstructions, flavor);
+      setAddedFeedbackMessage(`Added ${selectedMuffinPack} Muffin Pack (${flavor}) for R ${price.toFixed(2)} to bag!`);
     } else {
       const price = CUPCAKE_PRICES[selectedCupcakePack];
       const flavor = selectedCupcakeFlavor;
 
-      const newCupcakePack = {
-        id: `custom-cupcake-${Date.now()}-${selectedCupcakePack}`,
-        item: {
-          id: "daily-cupcake",
-          name: `Sweet Cupcake Pack (${selectedCupcakePack} Pcs)`,
-          category: Category.DESSERTS,
-          description: `Light fluffy sponge cakes decorated with delicious silky whipped frosting swirl. Pack size: ${selectedCupcakePack}.`,
-          image: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&q=80&w=600",
-          isBucket: false,
-          basePrice: price,
-          badge: "Lux Glazed"
-        },
-        qty: 1,
-        flavor: flavor
+      const newCupcakePack: MenuItem = {
+        id: `daily-cupcake-${selectedCupcakePack}`,
+        name: `Sweet Cupcake Pack (${selectedCupcakePack} Pcs)`,
+        category: Category.DESSERTS,
+        description: `Light fluffy sponge cakes decorated with delicious silky whipped frosting swirl. Pack size: ${selectedCupcakePack}.`,
+        image: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&q=80&w=600",
+        isBucket: false,
+        basePrice: price,
+        badge: "Lux Glazed"
       };
 
-      setCustomItems((prev) => [...prev, newCupcakePack]);
-      setAddedFeedbackMessage(`Added ${selectedCupcakePack} Cupcake Pack (${flavor}) for R ${price.toFixed(2)} to basket!`);
+      onAddToBag(newCupcakePack, 1, undefined, specialInstructions, flavor);
+      setAddedFeedbackMessage(`Added ${selectedCupcakePack} Cupcake Pack (${flavor}) for R ${price.toFixed(2)} to bag!`);
     }
 
     setTimeout(() => {
@@ -284,78 +289,20 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
   };
 
   // Remove a custom pack
-  const deleteCustomItem = (id: string) => {
-    setCustomItems((prev) => prev.filter((item) => item.id !== id));
+  const deleteCustomItem = (itemId: string, flavor: string) => {
+    onRemoveItem(itemId, undefined, flavor);
   };
 
-  const getSelectedItemDetails = () => {
-    // 1. Core small retail items
-    const items = SMALL_TREATS_ITEMS.map((item) => ({
-      id: item.id,
-      item,
-      qty: quantities[item.id] || 0,
-      flavor: selectedItemFlavors[item.id] || "Original",
-      isCustomPack: false
-    })).filter((x) => x.qty > 0);
+  const selectedItems = cartItems.filter(item => 
+    item.menuItem.id.startsWith("retail-") || 
+    item.menuItem.id.startsWith("daily-muffin-") || 
+    item.menuItem.id.startsWith("daily-cupcake-")
+  );
 
-    // 2. Custom muffin and cupcake packs
-    customItems.forEach((custom) => {
-      items.push({
-        id: custom.id,
-        item: custom.item,
-        qty: custom.qty,
-        flavor: custom.flavor,
-        isCustomPack: true
-      });
-    });
-
-    return items;
-  };
-
-  const selectedItems = getSelectedItemDetails();
-  
   // Running total calculation
   const runningTotal = selectedItems.reduce((acc, current) => {
-    return acc + current.item.basePrice * current.qty;
+    return acc + current.unitPrice * current.quantity;
   }, 0);
-
-  const handleProceedToOrder = () => {
-    if (selectedItems.length === 0) return;
-
-    // Add each selected item in batch to the master bag
-    selectedItems.forEach(({ item, qty, flavor }) => {
-      onAddToBag(
-        item,
-        qty,
-        undefined,
-        specialInstructions ? `Treat Order Notes: ${specialInstructions}` : "Daily Retail Treat Selection",
-        flavor
-      );
-    });
-
-    // Reset all quantities values to 0
-    setQuantities({
-      "retail-scone": 0,
-      "retail-rusk-classic": 0,
-      "retail-rusk-seed": 0,
-      "retail-biscuit-cherry": 0,
-      "retail-biscuit-chocolate": 0,
-      "retail-macaron-single": 0,
-    });
-    setCustomItems([]);
-    setSpecialInstructions("");
-
-    setOrderPlacedFeedback(true);
-    setTimeout(() => {
-      setOrderPlacedFeedback(false);
-    }, 4500);
-
-    // Scroll smoothly to cart trigger
-    const drawerTrigger = document.getElementById("cart-trigger");
-    if (drawerTrigger) {
-      drawerTrigger.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   return (
     <section id="daily-treats" className="scroll-mt-20 bg-stone-50 py-16 sm:py-24 border-b border-gold">
@@ -555,7 +502,7 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
           {/* Detailed Item Lists Grid (Standard Goods) */}
           <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             {SMALL_TREATS_ITEMS.map((item) => {
-              const qtySelected = quantities[item.id] || 0;
+              const qtySelected = getQtyInCart(item.id);
               const currentFlavor = selectedItemFlavors[item.id];
               const possibleFlavors = RETAIL_FLAVORS_OPTIONS[item.id] || [];
 
@@ -715,31 +662,29 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
               ) : (
                 <div className="space-y-4 max-h-[260px] overflow-y-auto pr-1">
                   {selectedItems.map((selected) => (
-                    <div key={selected.id || selected.item.id} className="flex justify-between items-start text-xs border-b border-stone-100 pb-2.5 last:border-0 last:pb-0">
+                    <div key={`${selected.menuItem.id}-${selected.selectedFlavor}`} className="flex justify-between items-start text-xs border-b border-stone-100 pb-2.5 last:border-0 last:pb-0">
                       <div className="flex-1 min-w-0 pr-2">
                         <div className="flex items-center space-x-1.5 flex-wrap">
-                          <span className="font-black font-mono text-gold">{selected.qty}x</span>
-                          <span className="font-semibold text-stone-850 truncate max-w-[170px]">{selected.item.name}</span>
+                          <span className="font-black font-mono text-gold">{selected.quantity}x</span>
+                          <span className="font-semibold text-stone-850 truncate max-w-[170px]">{selected.menuItem.name}</span>
                         </div>
                         <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] bg-amber-50 text-[#C5A028] border border-gold/15 font-bold font-sans">
-                          {selected.flavor}
+                          {selected.selectedFlavor}
                         </span>
                       </div>
                       
                       <div className="flex items-center space-x-2 shrink-0">
                         <span className="font-bold font-mono text-stone-900 text-xs">
-                          R {(selected.item.basePrice * selected.qty).toFixed(2)}
+                          R {(selected.unitPrice * selected.quantity).toFixed(2)}
                         </span>
-                        {selected.isCustomPack && (
-                          <button
-                            type="button"
-                            onClick={() => deleteCustomItem(selected.id)}
-                            className="text-stone-300 hover:text-rose-600 transition-colors cursor-pointer"
-                            title="Remove Pack"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => deleteCustomItem(selected.menuItem.id, selected.selectedFlavor)}
+                          className="text-stone-300 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Remove Item"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -779,15 +724,17 @@ export default function DailyTreats({ onAddToBag }: DailyTreatsProps) {
               <button
                 type="button"
                 disabled={selectedItems.length === 0}
-                onClick={handleProceedToOrder}
+                onClick={onOpenCart}
                 className={`w-full py-4 text-xs font-extrabold uppercase tracking-widest border transition-all flex items-center justify-center space-x-2 rounded-xl cursor-pointer ${
                   selectedItems.length > 0
-                    ? "bg-gold border-gold text-white hover:bg-stone-950"
+                    ? "bg-gold border-gold text-white hover:bg-stone-950 hover:border-stone-950"
                     : "bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed"
                 }`}
               >
-                <ShoppingBag className="h-4 w-4" />
-                <span>Move Selected to Main Bag</span>
+                <>
+                  <ShoppingBag className="h-4 w-4" />
+                  <span>View Bag &amp; Checkout</span>
+                </>
               </button>
 
             </div>

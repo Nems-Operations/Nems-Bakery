@@ -267,6 +267,10 @@ export default function App() {
             {/* Daily Treats Standalone Shop Component */}
             <DailyTreats 
               onAddToBag={handleAddToBag}
+              cartItems={cartItems}
+              onUpdateQty={handleUpdateQty}
+              onRemoveItem={handleRemoveItem}
+              onOpenCart={() => setIsCartOpen(true)}
             />
           </>
         ) : (
@@ -336,6 +340,7 @@ export default function App() {
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
+        onOpen={() => setIsCartOpen(true)}
         cartItems={cartItems}
         onUpdateQty={handleUpdateQty}
         onRemoveItem={handleRemoveItem}

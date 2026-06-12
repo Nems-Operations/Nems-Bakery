@@ -12,6 +12,7 @@ import { db, handleFirestoreError, OperationType } from "../firebase";
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpen?: () => void;
   cartItems: CartItem[];
   onUpdateQty: (id: string, size: string | undefined, qty: number, flavor?: string) => void;
   onRemoveItem: (id: string, size: string | undefined, flavor?: string) => void;
@@ -21,6 +22,7 @@ interface CartDrawerProps {
 export default function CartDrawer({
   isOpen,
   onClose,
+  onOpen,
   cartItems,
   onUpdateQty,
   onRemoveItem,
@@ -39,6 +41,50 @@ export default function CartDrawer({
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: "percentage" | "amount"; value: number } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [paymentSuccessData, setPaymentSuccessData] = useState<{ token: string; amount: number } | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  const loadYocoSDK = (): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      if ((window as any).YocoSDK) {
+        resolve((window as any).YocoSDK);
+        return;
+      }
+      const existingScript = document.getElementById("yoco-sdk-script");
+      if (existingScript) {
+        const interval = setInterval(() => {
+          if ((window as any).YocoSDK) {
+            clearInterval(interval);
+            resolve((window as any).YocoSDK);
+          }
+        }, 100);
+        setTimeout(() => {
+          clearInterval(interval);
+          reject(new Error("Yoco SDK timeout loading."));
+        }, 10000);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.id = "yoco-sdk-script";
+      script.src = "https://js.yoco.com/sdk/v1/yoco-sdk-web.js";
+      script.type = "text/javascript";
+      script.async = true;
+      script.onload = () => {
+        if ((window as any).YocoSDK) {
+          resolve((window as any).YocoSDK);
+        } else {
+          reject(new Error("Yoco SDK initialized but not found on window object."));
+        }
+      };
+      script.onerror = () => {
+        reject(new Error("Failed to load Yoco SDK script."));
+      };
+      document.body.appendChild(script);
+    });
+  };
 
   const smallTreatItems = useMemo(() => {
     return cartItems.filter(item => item.menuItem.id.startsWith("retail-") || item.menuItem.id === "daily-muffin" || item.menuItem.id === "daily-cupcake");
@@ -144,6 +190,49 @@ export default function CartDrawer({
     setCouponInput("");
   };
 
+  const submitOrder = async (yocoToken: string | null) => {
+    setSubmittingInvoice(true);
+
+    const productsDescription = cartItems.map(
+      item => `${item.menuItem.name}${item.selectedFlavor ? ` (${item.selectedFlavor})` : ''}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ''} x${item.quantity}`
+    ).join(", ");
+
+    const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
+    const path = "orders";
+
+    let finalPaymentMode = paymentMethod === "cod" ? (hasNormalOrders ? "split_cod_eft" : "cod") : "card_yoco";
+
+    try {
+      await addDoc(collection(db, path), {
+        customerName: customerName.trim(),
+        phoneNumber: customerPhone.trim(),
+        product: productsDescription.substring(0, 2000),
+        quantity: totalQuantity,
+        totalPrice: orderCalculations.total,
+        vatAmount: orderCalculations.vat,
+        status: "Pending",
+        orderDate: serverTimestamp(),
+        deliveryMethod,
+        deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
+        paymentMethod: finalPaymentMode,
+        yocoToken: yocoToken || null,
+        paymentStatus: yocoToken ? "Paid" : "Pending",
+        paymentDetails: finalPaymentMode === "split_cod_eft" ? {
+          cod_amount: orderCalculations.codTotal,
+          eft_amount: orderCalculations.eftTotal
+        } : null
+      });
+
+      setSubmittingInvoice(false);
+      setIsPaymentLoading(false);
+      setIsOrdered(true);
+    } catch (error) {
+      setSubmittingInvoice(false);
+      setIsPaymentLoading(false);
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  };
+
   const handleCheckoutSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const currentErrors: Record<string, string> = {};
@@ -162,46 +251,56 @@ export default function CartDrawer({
     }
 
     setErrors({});
-    setSubmittingInvoice(true);
 
-    const productsDescription = cartItems.map(
-      item => `${item.menuItem.name}${item.selectedFlavor ? ` (${item.selectedFlavor})` : ''}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ''} x${item.quantity}`
-    ).join(", ");
+    // If payment mode is cash on delivery, process it directly
+    if (paymentMethod === "cod") {
+      submitOrder(null);
+    } else {
+      setIsPaymentLoading(true);
+      setPaymentError(null);
+      setPaymentSuccessData(null);
 
-    const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
-    const path = "orders";
+      // Call onClose to slide/hide-transition the cart during checkout without unmounting
+      onClose();
 
-    let finalPaymentMode = "standard";
-    if (hasSmallOrders) {
-      if (paymentMethod === "cod") {
-        finalPaymentMode = hasNormalOrders ? "split_cod_eft" : "cod";
+      try {
+        const YocoSDKClass = await loadYocoSDK();
+        const yoco = new YocoSDKClass({
+          publicKey: "pk_test_ed31c61de60c7edd2de1",
+        });
+
+        const amountInCents = Math.round(orderCalculations.total * 100);
+
+        yoco.showPopup({
+          amountInCents: amountInCents,
+          currency: "ZAR",
+          name: "Nems Bakery",
+          description: `Bakery Checkout Order (${cartItems.length} items)`,
+          callback: async function (result: any) {
+            if (result.error) {
+              console.error("Yoco payment error:", result.error);
+              setPaymentError(result.error.message || "Payment unsuccessful or declined.");
+              setIsPaymentLoading(false);
+              onOpen?.(); // Slides the cart sidebar right back into view
+            } else {
+              console.log("Yoco payment success. Token id:", result.id);
+              setPaymentSuccessData({ token: result.id, amount: orderCalculations.total });
+              await submitOrder(result.id);
+              onOpen?.(); // Slides the cart right back into view showing the success screen
+            }
+          },
+          onClose: function () {
+            console.log("Yoco popup closed by user.");
+            setIsPaymentLoading(false);
+            onOpen?.(); // Slides the cart sidebar right back into view
+          }
+        });
+      } catch (error: any) {
+        console.error("Failed to load or configure Yoco SDK:", error);
+        setPaymentError(error.message || "Unable to open secure checkout portal.");
+        setIsPaymentLoading(false);
+        onOpen?.(); // Restore the cart if launching Yoco fails
       }
-    }
-
-    try {
-      await addDoc(collection(db, path), {
-        customerName: customerName.trim(),
-        phoneNumber: customerPhone.trim(),
-        product: productsDescription.substring(0, 2000),
-        quantity: totalQuantity,
-        totalPrice: orderCalculations.total,
-        vatAmount: orderCalculations.vat,
-        status: "Pending",
-        orderDate: serverTimestamp(),
-        deliveryMethod,
-        deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
-        paymentMethod: finalPaymentMode,
-        paymentDetails: finalPaymentMode === "split_cod_eft" ? {
-          cod_amount: orderCalculations.codTotal,
-          eft_amount: orderCalculations.eftTotal
-        } : null
-      });
-
-      setSubmittingInvoice(false);
-      setIsOrdered(true);
-    } catch (error) {
-      setSubmittingInvoice(false);
-      handleFirestoreError(error, OperationType.CREATE, path);
     }
   };
 
@@ -211,21 +310,24 @@ export default function CartDrawer({
     setCustomerName("");
     setCustomerPhone("");
     setAddress("");
+    setPaymentSuccessData(null);
+    setPaymentError(null);
     handleRemoveCoupon();
     onClose();
   };
 
-  if (!isOpen) return null;
+  // Render the drawer if it's open OR during active payment loading (so the Yoco iframe references and closures aren't unmounted and destroyed)
+  if (!isOpen && !isPaymentLoading) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden font-sans">
+    <div className={`fixed inset-0 overflow-hidden font-sans transition-all duration-300 ${(isPaymentLoading || !isOpen) ? "z-30 bg-transparent pointer-events-none" : "z-50"}`}>
       {/* Dark overlay backdrop */}
       <div 
         onClick={onClose}
-        className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs transition-opacity" 
+        className={`absolute inset-0 transition-opacity duration-300 ${(isPaymentLoading || !isOpen) ? "opacity-0 pointer-events-none" : "bg-stone-900/60 backdrop-blur-xs"}`} 
       />
 
-      <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
+      <div className={`absolute inset-y-0 right-0 flex max-w-full pl-10 transition-transform duration-305 ${(isPaymentLoading || !isOpen) ? "translate-x-full pointer-events-none" : "translate-x-0"}`}>
         <div className="w-screen max-w-md bg-white border-l border-stone-200">
           <div className="flex h-full flex-col justify-between shadow-2xl">
             
@@ -717,12 +819,48 @@ export default function CartDrawer({
                       )}
                     </div>
 
+                    {paymentSuccessData && (
+                      <div className="mb-4 bg-emerald-50 border border-emerald-300 p-4 text-xs text-emerald-950 font-semibold flex items-start space-x-2.5 shadow-md rounded-xl animate-fade-in border-l-4 border-l-emerald-600">
+                        <CheckCircle className="h-4.5 w-4.5 text-emerald-600 shrink-0 stroke-[3]" />
+                        <div>
+                          <strong className="font-bold block uppercase tracking-wide text-emerald-800 text-[10px] tracking-widest mb-1">Yoco Payment Successful!</strong>
+                          Paid <span className="font-bold font-mono">R {paymentSuccessData.amount.toFixed(2)}</span> with Charge Token: <code className="bg-emerald-100/80 px-1.5 py-0.5 rounded text-[10.5px] font-mono text-emerald-900 font-black border border-emerald-250">{paymentSuccessData.token}</code>. Order details submitted successfully.
+                        </div>
+                      </div>
+                    )}
+
+                    {paymentError && (
+                      <div className="mb-4 bg-rose-50 border border-rose-300 p-4 text-xs text-rose-950 font-semibold flex items-start space-x-2.5 shadow-md rounded-xl animate-fade-in border-l-4 border-l-rose-500">
+                        <span className="text-rose-600 font-bold text-lg shrink-0 leading-none">⚠️</span>
+                        <div>
+                          <strong className="font-bold block uppercase tracking-wide text-rose-800 text-[10px] tracking-widest mb-1">Secure Checkout Error</strong>
+                          {paymentError}
+                        </div>
+                      </div>
+                    )}
+
                     <button
                       type="submit"
-                      disabled={submittingInvoice}
-                      className="w-full rounded-full bg-stone-950 py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#D4AF37] hover:text-stone-950 transition-all shadow-md flex items-center justify-center space-x-2"
+                      disabled={submittingInvoice || isPaymentLoading}
+                      className={`w-full rounded-full py-3.5 text-xs font-bold uppercase tracking-wider text-white transition-all shadow-md flex items-center justify-center space-x-2 ${
+                        isPaymentLoading ? "bg-stone-800 cursor-not-allowed" : "bg-stone-950 hover:bg-[#D4AF37] hover:text-stone-950"
+                      }`}
                     >
-                      <span>{submittingInvoice ? "Scheduling Oven Queue..." : "Confirm Store & Bake Order"}</span>
+                      {isPaymentLoading ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <span>Launching Secure Yoco...</span>
+                        </>
+                      ) : submittingInvoice ? (
+                        <span>Scheduling Oven Queue...</span>
+                      ) : paymentMethod === "cod" ? (
+                        <span>Confirm Store &amp; Bake Order</span>
+                      ) : (
+                        <span>Pay with Yoco &amp; Order</span>
+                      )}
                     </button>
                   </div>
                 </form>
