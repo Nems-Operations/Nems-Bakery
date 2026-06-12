@@ -339,7 +339,7 @@ Expected Delivery/Collection Time: ${expectedTime}
       try {
         const YocoSDKClass = await loadYocoSDK();
         const yoco = new YocoSDKClass({
-          publicKey: "pk_live_4ae66754jVyVqkd49524",
+          publicKey: "pk_test_dc01a89djVyVqkdc42f4",
         });
 
         const amountInCents = Math.round(orderCalculations.total * 100);
