@@ -36,6 +36,8 @@ export default function CartDrawer({
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<"standard" | "cod">("standard");
+  const [expectedDate, setExpectedDate] = useState("");
+  const [expectedTime, setExpectedTime] = useState("");
 
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: "percentage" | "amount"; value: number } | null>(null);
@@ -256,6 +258,18 @@ export default function CartDrawer({
       currentErrors.address = "A delivery destination address is mandatory";
     }
 
+    if (paymentMethod === "cod") {
+      if (hasNormalOrders) {
+        if (!expectedDate) {
+          currentErrors.expectedDate = "Expected delivery/collection date is required";
+        }
+      } else {
+        if (!expectedTime) {
+          currentErrors.expectedTime = "Expected delivery/collection time is required";
+        }
+      }
+    }
+
     if (Object.keys(currentErrors).length > 0) {
       setErrors(currentErrors);
       return;
@@ -275,7 +289,9 @@ export default function CartDrawer({
 
       const deliverySelection = deliveryMethod === "collect" ? "Free Pickup" : "Courier";
 
-      const waMessage = `Hello Nems Bakery! I would like to place a Cash on Delivery order.
+      let waMessage = "";
+      if (hasNormalOrders) {
+        waMessage = `Hello Nems Bakery! I would like to place a Cash on Delivery order.
 
 Order Items:
 ${itemsList}
@@ -285,7 +301,24 @@ Delivery/Pickup Selection: ${deliverySelection}
 Customer Name: ${customerName.trim()}
 Phone Number: ${customerPhone.trim()}
 
-I understand that a 50% deposit is required before my order is processed.`;
+Expected Delivery/Collection Date: ${expectedDate}
+
+I understand that a 50% deposit is required before my order is processed and baked.`;
+      } else {
+        waMessage = `Hello Nems Bakery! I would like to place a Cash on Delivery order.
+
+Order Items:
+${itemsList}
+
+Total Balance: R${orderCalculations.total.toFixed(2)}
+Delivery/Pickup Selection: ${deliverySelection}
+Customer Name: ${customerName.trim()}
+Phone Number: ${customerPhone.trim()}
+
+Expected Delivery/Collection Time: ${expectedTime}
+
+(Please ensure you have physical cash ready upon delivery/collection.)`;
+      }
 
       const whatsappUrl = `https://wa.me/27637862408?text=${encodeURIComponent(waMessage)}`;
       window.open(whatsappUrl, "_blank");
@@ -344,6 +377,8 @@ I understand that a 50% deposit is required before my order is processed.`;
     setCustomerName("");
     setCustomerPhone("");
     setAddress("");
+    setExpectedDate("");
+    setExpectedTime("");
     setPaymentSuccessData(null);
     setPaymentError(null);
     handleRemoveCoupon();
@@ -865,6 +900,72 @@ I understand that a 50% deposit is required before my order is processed.`;
                           <strong className="font-bold block uppercase tracking-wide text-rose-800 text-[10px] tracking-widest mb-1">Secure Checkout Error</strong>
                           {paymentError}
                         </div>
+                      </div>
+                    )}
+
+                    {paymentMethod === "cod" && (
+                      <div className="mb-4 space-y-3 p-3.5 bg-amber-50/20 border border-amber-100 rounded-xl">
+                        {hasNormalOrders ? (
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-stone-600 block mb-1">
+                              Expected Delivery/Collection Date *
+                            </label>
+                            <input
+                              type="date"
+                              required
+                              value={expectedDate}
+                              onChange={(e) => {
+                                setExpectedDate(e.target.value);
+                                if (errors.expectedDate) {
+                                  setErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next.expectedDate;
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                errors.expectedDate ? "border-rose-500" : "border-stone-200"
+                              }`}
+                            />
+                            {errors.expectedDate && <p className="text-[10px] text-rose-500 mt-1 font-bold">{errors.expectedDate}</p>}
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="text-[10px] uppercase font-bold text-stone-600 block mb-1">
+                              Expected Delivery/Collection Time *
+                            </label>
+                            <select
+                              required
+                              value={expectedTime}
+                              onChange={(e) => {
+                                setExpectedTime(e.target.value);
+                                if (errors.expectedTime) {
+                                  setErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next.expectedTime;
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                errors.expectedTime ? "border-rose-500" : "border-stone-200"
+                              }`}
+                            >
+                              <option value="">-- Please select a 1-hour window --</option>
+                              <option value="07:00 - 08:00">07:00 - 08:00</option>
+                              <option value="08:00 - 09:00">08:00 - 09:00</option>
+                              <option value="09:00 - 10:00">09:00 - 10:00</option>
+                              <option value="10:00 - 11:00">10:00 - 11:00</option>
+                              <option value="11:00 - 12:00">11:00 - 12:00</option>
+                              <option value="12:00 - 13:00">12:00 - 13:00</option>
+                              <option value="13:00 - 14:00">13:00 - 14:00</option>
+                              <option value="14:00 - 15:00">14:00 - 15:00</option>
+                              <option value="15:00 - 16:00">15:00 - 16:00</option>
+                            </select>
+                            {errors.expectedTime && <p className="text-[10px] text-rose-500 mt-1 font-bold">{errors.expectedTime}</p>}
+                          </div>
+                        )}
                       </div>
                     )}
 
