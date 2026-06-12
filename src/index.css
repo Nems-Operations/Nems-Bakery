@@ -17,6 +17,13 @@ body {
 }
 
 /* Fix Yoco SDK checkout z-index trapping & Center perfectly on mobile viewports */
+.yoco-payment-wrapper, 
+[id*="yoco"], 
+iframe[src*="yoco"] {
+  z-index: 999999 !important;
+  position: fixed !important;
+}
+
 iframe[src*="yoco"], 
 div[id*="yoco"], 
 div[class*="yoco"], 
@@ -29,6 +36,10 @@ div[class*="yoco"],
 }
 
 /* Ensure Coming Soon banners are styled with a low, non-intrusive relative stack */
+.coming-soon-banner {
+  z-index: 100 !important; /* Layout priority set lower */
+}
+
 .coming-soon-banner,
 [class*="coming-soon"],
 [id*="coming-soon"] {
