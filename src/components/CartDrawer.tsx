@@ -133,22 +133,28 @@ export default function CartDrawer({
     }
 
     const subtotalAfterDiscount = Math.max(0, subtotal - discount);
-    const vat = Math.round((subtotalAfterDiscount * 0.15) * 100) / 100; // SA VAT (15%)
-    const total = Math.round((subtotalAfterDiscount + vat + deliveryFee) * 100) / 100;
+    
+    // Reverse-calculate VAT and Subtotal (Excl. VAT) from Total
+    const total = Math.round((subtotalAfterDiscount + deliveryFee) * 100) / 100;
+    const subtotalExcl = Math.round((total / 1.15) * 100) / 100;
+    const vat = Math.round((total - subtotalExcl) * 100) / 100;
     
     const discountRatio = subtotal > 0 ? (subtotalAfterDiscount / subtotal) : 1;
     
     const discountedSmallSubtotal = smallSubtotal * discountRatio;
     const discountedNormalSubtotal = normalSubtotal * discountRatio;
     
-    const smallVat = Math.round((discountedSmallSubtotal * 0.15) * 100) / 100;
-    const normalVat = Math.round((discountedNormalSubtotal * 0.15) * 100) / 100;
+    const codTotal = Math.round(discountedSmallSubtotal * 100) / 100;
+    const eftTotal = Math.round((discountedNormalSubtotal + deliveryFee) * 100) / 100;
     
-    const codTotal = Math.round((discountedSmallSubtotal + smallVat) * 100) / 100;
-    const eftTotal = Math.round((discountedNormalSubtotal + normalVat + deliveryFee) * 100) / 100;
+    const smallSubtotalExcl = Math.round((codTotal / 1.15) * 100) / 100;
+    const smallVat = Math.round((codTotal - smallSubtotalExcl) * 100) / 100;
+    
+    const normalSubtotalExcl = Math.round((eftTotal / 1.15) * 100) / 100;
+    const normalVat = Math.round((eftTotal - normalSubtotalExcl) * 100) / 100;
     
     return { 
-      subtotal, 
+      subtotal: subtotalExcl, 
       discount,
       subtotalAfterDiscount,
       vat, 
@@ -333,7 +339,7 @@ Expected Delivery/Collection Time: ${expectedTime}
       try {
         const YocoSDKClass = await loadYocoSDK();
         const yoco = new YocoSDKClass({
-          publicKey: "pk_test_ed31c61de60c7edd2de1",
+          publicKey: "pk_live_4ae66754jVyVqkd49524",
         });
 
         const amountInCents = Math.round(orderCalculations.total * 100);
@@ -723,7 +729,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                   {/* Part 3: Subtotal & Total Dashboard Card */}
                   <div className="bg-stone-50 p-4 rounded-xl space-y-2.5 border border-stone-200/40 text-xs text-stone-800">
                     <div className="flex justify-between text-[11px] text-stone-500">
-                      <span>Items Subtotal (Excl. VAT):</span>
+                      <span>Subtotal (Excl. VAT):</span>
                       <span className="font-mono">R {orderCalculations.subtotal.toFixed(2)}</span>
                     </div>
 
@@ -743,7 +749,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                     )}
 
                     <div className="flex justify-between text-[11px] text-stone-500 border-t border-stone-150 pt-2">
-                      <span>🇿🇦 SA VAT Included (15%):</span>
+                      <span>ZA SA VAT Included (15%):</span>
                       <span className="font-mono">R {orderCalculations.vat.toFixed(2)}</span>
                     </div>
 
@@ -861,7 +867,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                                 : "bg-white text-stone-800 border-stone-200 hover:border-[#D4AF37]/60"
                             }`}
                           >
-                            {hasNormalOrders ? "EFT Both Together" : "Standard EFT"}
+                            {hasNormalOrders && hasSmallOrders ? "EFT BOTH TOGETHER" : "PAY WITH CARD / EFT"}
                           </button>
                           <button
                             type="button"
@@ -998,8 +1004,10 @@ Expected Delivery/Collection Time: ${expectedTime}
                         <span>Scheduling Oven Queue...</span>
                       ) : paymentMethod === "cod" ? (
                         <span>SEND &amp; CONFIRM VIA WHATSAPP</span>
+                      ) : hasNormalOrders && hasSmallOrders ? (
+                        <span>PAY BOTH WITH YOCO</span>
                       ) : (
-                        <span>Pay with Yoco &amp; Order</span>
+                        <span>PAY WITH YOCO &amp; ORDER</span>
                       )}
                     </button>
                   </div>
