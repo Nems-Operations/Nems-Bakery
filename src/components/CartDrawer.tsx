@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, FormEvent } from "react";
+import { useState, useMemo, FormEvent, useEffect } from "react";
 import { CartItem } from "../types";
 import { X, Trash2, ShoppingBag, Truck, CheckCircle, Clock } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -45,6 +45,17 @@ export default function CartDrawer({
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [paymentSuccessData, setPaymentSuccessData] = useState<{ token: string; amount: number } | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isPaymentLoading) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isPaymentLoading]);
 
   const loadYocoSDK = (): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -252,9 +263,32 @@ export default function CartDrawer({
 
     setErrors({});
 
-    // If payment mode is cash on delivery, process it directly
+    // If payment mode is cash on delivery, redirect to WhatsApp
     if (paymentMethod === "cod") {
-      submitOrder(null);
+      onClose();
+
+      const itemsList = cartItems.map(item => {
+        const flavorStr = item.selectedFlavor ? ` (${item.selectedFlavor})` : '';
+        const sizeStr = item.selectedSize ? ` (${item.selectedSize} Bucket)` : '';
+        return `${item.menuItem.name}${flavorStr}${sizeStr} x ${item.quantity} (R ${item.unitPrice.toFixed(2)} each)`;
+      }).join("\n");
+
+      const deliverySelection = deliveryMethod === "collect" ? "Free Pickup" : "Courier";
+
+      const waMessage = `Hello Nems Bakery! I would like to place a Cash on Delivery order.
+
+Order Items:
+${itemsList}
+
+Total Balance: R${orderCalculations.total.toFixed(2)}
+Delivery/Pickup Selection: ${deliverySelection}
+Customer Name: ${customerName.trim()}
+Phone Number: ${customerPhone.trim()}
+
+I understand that a 50% deposit is required before my order is processed.`;
+
+      const whatsappUrl = `https://wa.me/27637862408?text=${encodeURIComponent(waMessage)}`;
+      window.open(whatsappUrl, "_blank");
     } else {
       setIsPaymentLoading(true);
       setPaymentError(null);
@@ -777,46 +811,41 @@ export default function CartDrawer({
                         </div>
                       )}
 
-                      {/* Cash Option if relevant */}
-                      {hasSmallOrders && (
-                        <div className="space-y-2 pt-1 border border-amber-100 bg-amber-50/10 p-2.5 rounded-lg">
-                          <label className="text-[9px] uppercase font-bold text-[#C5A028] block mb-1">
-                            Daily Treats Payment Option
-                          </label>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <button
-                              type="button"
-                              onClick={() => setPaymentMethod("standard")}
-                              className={`rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                                paymentMethod === "standard"
-                                  ? "bg-stone-950 text-white border-stone-950"
-                                  : "bg-white text-stone-800 border-stone-200 hover:border-[#D4AF37]/60"
-                              }`}
-                            >
-                              {hasNormalOrders ? "EFT Both Together" : "Standard EFT"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPaymentMethod("cod")}
-                              className={`rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                                paymentMethod === "cod"
-                                  ? "bg-[#D4AF37] text-white border-[#D4AF37] shadow-xs"
-                                  : "bg-white text-stone-800 border-stone-200 hover:border-[#D4AF37]/60"
-                              }`}
-                            >
-                              💵 Cash on Delivery
-                            </button>
-                          </div>
-                          <p className="text-[10px] text-stone-500 bg-stone-50/50 p-2 border border-stone-100/50 italic rounded">
-                            {paymentMethod === "cod" 
-                              ? (hasNormalOrders 
-                                ? `Treat components (R ${orderCalculations.codTotal.toFixed(2)}) paid via Cash upon arrival. Large Catering / Bucket order requires EFT confirmation before prep.`
-                                : `Prepare clean cash matching your total of R ${orderCalculations.total} on arrival.`
-                                )
-                              : "Settle everything altogether using credit card/instant bank EFT transfer."}
-                          </p>
+                      {/* Cash Option for all configurations */}
+                      <div className="space-y-2 pt-1 border border-amber-100 bg-amber-50/10 p-2.5 rounded-lg">
+                        <label className="text-[9px] uppercase font-bold text-[#C5A028] block mb-1">
+                          Payment Option Selection
+                        </label>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod("standard")}
+                            className={`rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                              paymentMethod === "standard"
+                                ? "bg-stone-950 text-white border-stone-950"
+                                : "bg-white text-stone-800 border-stone-200 hover:border-[#D4AF37]/60"
+                            }`}
+                          >
+                            {hasNormalOrders ? "EFT Both Together" : "Standard EFT"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod("cod")}
+                            className={`rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                              paymentMethod === "cod"
+                                ? "bg-[#D4AF37] text-white border-[#D4AF37] shadow-xs"
+                                : "bg-white text-stone-800 border-stone-200 hover:border-[#D4AF37]/60"
+                            }`}
+                          >
+                            💵 Cash on Delivery
+                          </button>
                         </div>
-                      )}
+                        <p className="text-[10px] text-stone-500 bg-stone-50/50 p-2 border border-stone-100/50 italic rounded">
+                          {paymentMethod === "cod" 
+                            ? `Confirming via WhatsApp allows you to pay Cash on Delivery. Note that a 50% deposit is required via WhatsApp before prep.`
+                            : "Settle everything altogether using credit card/instant bank EFT transfer."}
+                        </p>
+                      </div>
                     </div>
 
                     {paymentSuccessData && (
@@ -839,11 +868,21 @@ export default function CartDrawer({
                       </div>
                     )}
 
+                    {paymentMethod === "cod" && (
+                      <div className="mb-4 bg-amber-50 border border-amber-200 p-3.5 text-[11px] text-[#C5A028] font-bold text-center rounded-xl animate-fade-in italic">
+                        *Please note: A 50% deposit is required via WhatsApp before your cash order can be processed and baked.*
+                      </div>
+                    )}
+
                     <button
                       type="submit"
                       disabled={submittingInvoice || isPaymentLoading}
                       className={`w-full rounded-full py-3.5 text-xs font-bold uppercase tracking-wider text-white transition-all shadow-md flex items-center justify-center space-x-2 ${
-                        isPaymentLoading ? "bg-stone-800 cursor-not-allowed" : "bg-stone-950 hover:bg-[#D4AF37] hover:text-stone-950"
+                        isPaymentLoading 
+                          ? "bg-stone-800 cursor-not-allowed" 
+                          : paymentMethod === "cod"
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white" 
+                            : "bg-stone-950 hover:bg-[#D4AF37] hover:text-stone-950"
                       }`}
                     >
                       {isPaymentLoading ? (
@@ -857,7 +896,7 @@ export default function CartDrawer({
                       ) : submittingInvoice ? (
                         <span>Scheduling Oven Queue...</span>
                       ) : paymentMethod === "cod" ? (
-                        <span>Confirm Store &amp; Bake Order</span>
+                        <span>SEND &amp; CONFIRM VIA WHATSAPP</span>
                       ) : (
                         <span>Pay with Yoco &amp; Order</span>
                       )}

@@ -16,9 +16,27 @@ body {
   background-color: #FFFFFF;
 }
 
-/* Fix Yoco SDK checkout z-index trapping */
+/* Fix Yoco SDK checkout z-index trapping & Center perfectly on mobile viewports */
 iframe[src*="yoco"], div[id*="yoco"], div[class*="yoco"], #yoco-checkout-frame, .yoco-checkout-modal, #yoco-wrapper, .yoco-popup-container, .yoco-sdk-wrapper {
   z-index: 999999 !important;
+}
+
+@media (max-width: 639px) {
+  /* Center the Yoco wrapper container or iframe perfectly on small screens */
+  iframe[src*="yoco"], 
+  div[id*="yoco"],
+  #yoco-checkout-frame,
+  .yoco-checkout-modal,
+  #yoco-wrapper,
+  .yoco-popup-container {
+    position: fixed !important;
+    top: 52% !important; /* Shifted slightly lower to provide safe space at the top */
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-height: calc(100vh - 40px) !important;
+    max-width: calc(100vw - 12px) !important;
+    margin-top: 16px !important; /* Safe margin at the top so the 'X' button is always fully visible */
+  }
 }
 
 h1, h2, h3, h4, .serif {
