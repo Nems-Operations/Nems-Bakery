@@ -20,6 +20,8 @@ body {
 .yoco-payment-wrapper, 
 [id*="yoco"], 
 iframe[src*="yoco"] {
+  background: rgba(255, 255, 255, 0.98) !important; /* Solid clean white background to block underlying page text */
+  backdrop-filter: blur(8px) !important;
   z-index: 999999 !important;
   position: fixed !important;
 }

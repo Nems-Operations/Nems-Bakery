@@ -134,10 +134,7 @@ export default function CartDrawer({
 
     const subtotalAfterDiscount = Math.max(0, subtotal - discount);
     
-    // Reverse-calculate VAT and Subtotal (Excl. VAT) from Total
     const total = Math.round((subtotalAfterDiscount + deliveryFee) * 100) / 100;
-    const subtotalExcl = Math.round((total / 1.15) * 100) / 100;
-    const vat = Math.round((total - subtotalExcl) * 100) / 100;
     
     const discountRatio = subtotal > 0 ? (subtotalAfterDiscount / subtotal) : 1;
     
@@ -147,20 +144,11 @@ export default function CartDrawer({
     const codTotal = Math.round(discountedSmallSubtotal * 100) / 100;
     const eftTotal = Math.round((discountedNormalSubtotal + deliveryFee) * 100) / 100;
     
-    const smallSubtotalExcl = Math.round((codTotal / 1.15) * 100) / 100;
-    const smallVat = Math.round((codTotal - smallSubtotalExcl) * 100) / 100;
-    
-    const normalSubtotalExcl = Math.round((eftTotal / 1.15) * 100) / 100;
-    const normalVat = Math.round((eftTotal - normalSubtotalExcl) * 100) / 100;
-    
     return { 
-      subtotal: subtotalExcl, 
+      subtotal, 
       discount,
       subtotalAfterDiscount,
-      vat, 
       total,
-      smallVat,
-      normalVat,
       codTotal,
       eftTotal
     };
@@ -228,7 +216,7 @@ export default function CartDrawer({
         product: productsDescription.substring(0, 2000),
         quantity: totalQuantity,
         totalPrice: orderCalculations.total,
-        vatAmount: orderCalculations.vat,
+        vatAmount: 0,
         status: "Pending",
         orderDate: serverTimestamp(),
         deliveryMethod,
@@ -339,7 +327,7 @@ Expected Delivery/Collection Time: ${expectedTime}
       try {
         const YocoSDKClass = await loadYocoSDK();
         const yoco = new YocoSDKClass({
-          publicKey: "pk_test_dc01a89djVyVqkdc42f4",
+          publicKey: "pk_live_4ae66754jVyVqkd49524",
         });
 
         const amountInCents = Math.round(orderCalculations.total * 100);
@@ -455,18 +443,18 @@ Expected Delivery/Collection Time: ${expectedTime}
                         {hasSmallOrders && paymentMethod === "cod" ? (
                           hasNormalOrders ? (
                             <div className="space-y-1">
-                              <span className="text-stone-900 font-bold uppercase tracking-wider text-[9px] block">Split Payment Instructions (with 15% VAT):</span>
-                              <p>🧁 <strong className="text-stone-950">Daily Treats (Cash on Delivery):</strong> Please prepare <strong className="text-amber-800 font-mono font-bold">R {orderCalculations.codTotal.toFixed(2)}</strong> (incl. VAT) in cash to settle on delivery.</p>
-                              <p>🎂 <strong className="text-stone-950">Bulk Catering (Instant EFT / Card):</strong> The remaining <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.eftTotal.toFixed(2)}</strong> (incl. VAT) must be settled via EFT before delivery.</p>
+                              <span className="text-stone-900 font-bold uppercase tracking-wider text-[9px] block">Split Payment Instructions:</span>
+                              <p>🧁 <strong className="text-stone-950">Daily Treats (Cash on Delivery):</strong> Please prepare <strong className="text-amber-800 font-mono font-bold">R {orderCalculations.codTotal.toFixed(2)}</strong> in cash to settle on delivery.</p>
+                              <p>🎂 <strong className="text-stone-950">Bulk Catering (Instant EFT / Card):</strong> The remaining <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.eftTotal.toFixed(2)}</strong> must be settled via EFT before delivery.</p>
                             </div>
                           ) : (
                             <p>
-                              Payment option is confirmed as <strong className="text-stone-950">Cash on Delivery (COD)</strong>. Please prepare exactly <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> (incl. 15% VAT) in cash for collection or delivery verification.
+                              Payment option is confirmed as <strong className="text-stone-950">Cash on Delivery (COD)</strong>. Please prepare exactly <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> in cash for collection or delivery verification.
                             </p>
                           )
                         ) : (
                           <p>
-                            A dynamic quote receipt copy has been sent to your phone <strong className="text-stone-950">{customerPhone}</strong>. The total of <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> (incl. 15% VAT) can be paid altogether via secure instant EFT or card.
+                            A dynamic quote receipt copy has been sent to your phone <strong className="text-stone-950">{customerPhone}</strong>. The total of <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> can be paid altogether via secure instant EFT or card.
                           </p>
                         )}
                       </div>
@@ -729,7 +717,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                   {/* Part 3: Subtotal & Total Dashboard Card */}
                   <div className="bg-stone-50 p-4 rounded-xl space-y-2.5 border border-stone-200/40 text-xs text-stone-800">
                     <div className="flex justify-between text-[11px] text-stone-500">
-                      <span>Subtotal (Excl. VAT):</span>
+                      <span>Subtotal:</span>
                       <span className="font-mono">R {orderCalculations.subtotal.toFixed(2)}</span>
                     </div>
 
@@ -748,31 +736,26 @@ Expected Delivery/Collection Time: ${expectedTime}
                       </div>
                     )}
 
-                    <div className="flex justify-between text-[11px] text-stone-500 border-t border-stone-150 pt-2">
-                      <span>ZA SA VAT Included (15%):</span>
-                      <span className="font-mono">R {orderCalculations.vat.toFixed(2)}</span>
-                    </div>
-
                     {/* Split COD payments vs Combined total display */}
                     {hasSmallOrders && hasNormalOrders && paymentMethod === "cod" ? (
                       <div className="border-t border-dashed border-stone-200 pt-2.5 space-y-1.5 font-bold">
                         <div className="flex justify-between text-yellow-850 bg-amber-50/50 p-1.5 rounded text-[11px] border border-amber-100">
-                          <span>💵 Daily Treats (COD Due, Incl. VAT):</span>
+                          <span>💵 Daily Treats (COD Due):</span>
                           <span className="font-mono">R {orderCalculations.codTotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-stone-700 p-1.5 rounded text-[11px] bg-stone-100 border border-stone-200">
-                          <span>🎂 Bulk Catering (EFT Due, Incl. VAT):</span>
+                          <span>🎂 Bulk Catering (EFT Due):</span>
                           <span className="font-mono">R {orderCalculations.eftTotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between border-t border-stone-200 pt-1.5 text-xs text-stone-900 bg-[#FDFAF5] p-1.5 border border-gold/30">
-                          <span>Total Package Price (VAT Incl.):</span>
+                          <span>Total Package Price:</span>
                           <strong className="font-mono text-gold">R {orderCalculations.total.toFixed(2)}</strong>
                         </div>
                       </div>
                     ) : (
                       <div className="flex justify-between border-t border-[#D4AF37]/30 pt-2 text-sm bg-[#FDFAF5] p-2 border border-gold/30 rounded">
                         <span className="font-bold text-stone-950 font-serif">
-                          {paymentMethod === "cod" ? "COD Total (VAT Incl.):" : "Combined Total (VAT Incl.):"}
+                          {paymentMethod === "cod" ? "COD Total:" : "Combined Total:"}
                         </span>
                         <strong className="font-black text-[#D4AF37] font-serif font-mono text-base">
                           R {orderCalculations.total.toFixed(2)}
