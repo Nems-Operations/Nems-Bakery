@@ -214,7 +214,7 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
                   )}
 
                   {item.isComingSoon && (
-                    <div className="absolute inset-0 bg-stone-900/65 flex items-center justify-center p-2 text-center select-none z-10">
+                    <div className="absolute inset-0 bg-stone-900/65 flex items-center justify-center p-2 text-center select-none z-10 coming-soon-banner">
                       <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-stone-100 text-stone-950 border border-gold px-2 py-1 shadow-sm rounded-xs">
                         Coming Soon
                       </span>

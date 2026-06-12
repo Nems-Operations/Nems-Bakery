@@ -535,7 +535,7 @@ export default function DailyTreats({
 
                     {/* Coming Soon overlay with brand stamp */}
                     {item.isComingSoon && (
-                      <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 z-10 select-none">
+                      <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 z-10 select-none coming-soon-banner">
                         <div className="mb-1.5 h-10 w-10 rounded-full border border-gold bg-white p-1 flex items-center justify-center shadow-md animate-pulse">
                           <img src="./images/logo.png" alt="Nems Logo" className="h-[90%] w-[90%] object-contain" />
                         </div>

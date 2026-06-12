@@ -17,8 +17,22 @@ body {
 }
 
 /* Fix Yoco SDK checkout z-index trapping & Center perfectly on mobile viewports */
-iframe[src*="yoco"], div[id*="yoco"], div[class*="yoco"], #yoco-checkout-frame, .yoco-checkout-modal, #yoco-wrapper, .yoco-popup-container, .yoco-sdk-wrapper {
-  z-index: 999999 !important;
+iframe[src*="yoco"], 
+div[id*="yoco"], 
+div[class*="yoco"], 
+#yoco-checkout-frame, 
+.yoco-checkout-modal, 
+#yoco-wrapper, 
+.yoco-popup-container, 
+.yoco-sdk-wrapper {
+  z-index: 100000 !important; /* Extremely high priority layer stack setting */
+}
+
+/* Ensure Coming Soon banners are styled with a low, non-intrusive relative stack */
+.coming-soon-banner,
+[class*="coming-soon"],
+[id*="coming-soon"] {
+  z-index: 10 !important; /* Keep it significantly lower to prevent front rendering issues */
 }
 
 @media (max-width: 639px) {
@@ -30,12 +44,12 @@ iframe[src*="yoco"], div[id*="yoco"], div[class*="yoco"], #yoco-checkout-frame, 
   #yoco-wrapper,
   .yoco-popup-container {
     position: fixed !important;
-    top: 52% !important; /* Shifted slightly lower to provide safe space at the top */
+    top: 50% !important; /* Perfect vertical and horizontal centering on mobile */
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    max-height: calc(100vh - 40px) !important;
-    max-width: calc(100vw - 12px) !important;
-    margin-top: 16px !important; /* Safe margin at the top so the 'X' button is always fully visible */
+    max-height: calc(100vh - 60px) !important;
+    max-width: calc(100vw - 16px) !important;
+    margin-top: 20px !important; /* Generous safe margin at the top so the 'X' button is always fully visible */
   }
 }
 

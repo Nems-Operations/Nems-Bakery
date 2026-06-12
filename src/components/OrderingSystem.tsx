@@ -201,7 +201,7 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
 
                   {/* Coming Soon overlay screen */}
                   {item.isComingSoon && (
-                    <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4 z-20">
+                    <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4 z-10 coming-soon-banner">
                       <div className="mb-2 h-12 w-12 rounded-full border border-gold bg-white p-1 flex items-center justify-center shadow-lg">
                         <img src="./images/logo.png" alt="Nems Logo" className="h-full w-full object-contain" />
                       </div>
