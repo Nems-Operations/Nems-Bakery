@@ -219,6 +219,45 @@ export default function CartDrawer({
         } : null
       });
 
+      // Trigger checkout email automation backend script
+      try {
+        await fetch("/api/send-order-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderNumber: trackingNumber,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            companyName: companyName.trim(),
+            deliveryMethod,
+            deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
+            email: email.trim(),
+            cartItems: cartItems.map(item => ({
+              menuItem: {
+                name: item.menuItem.name,
+                id: item.menuItem.id,
+                basePrice: item.menuItem.basePrice,
+              },
+              selectedFlavor: item.selectedFlavor || null,
+              selectedSize: item.selectedSize || null,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+            })),
+            orderCalculations: {
+              subtotal: orderCalculations.subtotal,
+              deliveryFee: orderCalculations.deliveryFee,
+              discount: orderCalculations.discount,
+              processingFee: orderCalculations.processingFee,
+              total: orderCalculations.total,
+            },
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Email notification trigger error:", emailErr);
+      }
+
       return docRef.id;
     } catch (error) {
       setSubmittingInvoice(false);
