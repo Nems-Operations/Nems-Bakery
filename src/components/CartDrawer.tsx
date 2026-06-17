@@ -273,21 +273,42 @@ Expected Delivery/Collection Time: ${expectedTime}
       try {
         // Automatically determine if the app should use the pure client-side checkout or server-side API.
         // It should use client-side if hosted on GitHub Pages (static), or if explicitly specified by setting.
-        const isLocalOrPreview = window.location.hostname === "localhost" || 
-                                 window.location.hostname === "127.0.0.1" || 
-                                 window.location.hostname.endsWith(".run.app");
-        const isStaticHost = !isLocalOrPreview || import.meta.env.VITE_FORCE_CLIENT_CHECKOUT === "true";
+        const hostname = window.location.hostname;
+        const isLocalOrPreview = hostname === "localhost" || 
+                                 hostname === "127.0.0.1" || 
+                                 hostname.endsWith(".run.app") ||
+                                 hostname.endsWith(".dev");
+        const isStaticHost = !isLocalOrPreview;
 
-        const customApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || "";
+        let rawCustomApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || "";
+        
+        // Normalize any empty, undefined, or null string placeholders that can get built by static CI/CD
+        if (
+          !rawCustomApiUrl || 
+          rawCustomApiUrl === "undefined" || 
+          rawCustomApiUrl === "null" || 
+          rawCustomApiUrl.trim() === "" || 
+          rawCustomApiUrl.includes("__") || 
+          rawCustomApiUrl === "placeholder"
+        ) {
+          rawCustomApiUrl = "";
+        }
+
+        const customApiUrl = rawCustomApiUrl;
+
+        // Force pure client-side checkout if running on static host where relative API routes (like /api/checkout)
+        // are not possible (and no valid absolute external API is supplied), or if forced via setting.
+        const useClientCheckout = isStaticHost && (customApiUrl === "" || !customApiUrl.startsWith("http")) || 
+                                 import.meta.env.VITE_FORCE_CLIENT_CHECKOUT === "true";
 
         let orderId = "";
         let trackingNumber = "";
         let payfastUrl = "";
         let payfastFields: Record<string, string> = {};
 
-        if (isStaticHost && !customApiUrl) {
+        if (useClientCheckout) {
           // --- PURE FRONTEND CHECKOUT FLOW (for GitHub Pages / static hosting) ---
-          console.log("Static hosting detected - performing direct frontend checkout...");
+          console.log("Direct client-side static checkout selected (no absolute external API URL is configured or static-mode is forced). Saving to Firestore and posting securely to PayFast...");
           
           trackingNumber = generateTrackingNumber();
           const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -376,8 +397,16 @@ Expected Delivery/Collection Time: ${expectedTime}
             } else {
               endpointUrl = `${customApiUrl.replace(/\/$/, "")}/api/checkout`;
             }
+          } else {
+            // Build default fallback production Firebase Cloud Functions URL as requested
+            let projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || "";
+            if (!projectId || projectId === "undefined" || projectId === "null") {
+              projectId = "react-example-dfa43";
+            }
+            endpointUrl = `https://us-central1-${projectId}.cloudfunctions.net/checkout`;
+            console.log(`No active backend URL specified; defaulting to production Cloud Function endpoint fallback: ${endpointUrl}`);
           }
-          console.log(`Executing server side checkout via endpoint: ${endpointUrl}`);
+          console.log(`Executing server-side checkout via endpoint: ${endpointUrl}`);
 
           const response = await fetch(endpointUrl, {
             method: "POST",
