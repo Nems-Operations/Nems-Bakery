@@ -184,91 +184,7 @@ export default function CartDrawer({
   };
 
   const submitOrder = async (trackingNumber: string): Promise<string> => {
-    setSubmittingInvoice(true);
-
-    const productsDescription = cartItems.map(
-      item => `${item.menuItem.name}${item.selectedFlavor ? ` (${item.selectedFlavor})` : ''}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ''} x${item.quantity}`
-    ).join(", ");
-
-    const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
-    const path = "orders";
-
-    let finalPaymentMode = paymentMethod === "cod" ? (hasNormalOrders ? "split_cod_eft" : "cod") : "card_payfast";
-
-    try {
-      const docRef = await addDoc(collection(db, path), {
-        customerName: customerName.trim(),
-        phoneNumber: customerPhone.trim(),
-        email: email.trim(),
-        companyName: companyName.trim(),
-        product: productsDescription.substring(0, 2000),
-        quantity: totalQuantity,
-        totalPrice: orderCalculations.total,
-        vatAmount: 0,
-        status: "Pending",
-        orderDate: serverTimestamp(),
-        deliveryMethod,
-        deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
-        paymentMethod: finalPaymentMode,
-        paymentStatus: "Pending",
-        orderNumber: trackingNumber,
-        trackingNumber: trackingNumber,
-        paymentDetails: finalPaymentMode === "split_cod_eft" ? {
-          cod_amount: orderCalculations.codTotal,
-          eft_amount: orderCalculations.eftTotal
-        } : null
-      });
-
-      // Trigger checkout email automation backend script in the background without blocking the order flow
-      fetch("/api/send-order-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderNumber: trackingNumber,
-          customerName: customerName.trim(),
-          customerPhone: customerPhone.trim(),
-          companyName: companyName.trim(),
-          deliveryMethod,
-          deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
-          email: email.trim(),
-          cartItems: cartItems.map(item => ({
-            menuItem: {
-              name: item.menuItem.name,
-              id: item.menuItem.id,
-              basePrice: item.menuItem.basePrice,
-            },
-            selectedFlavor: item.selectedFlavor || null,
-            selectedSize: item.selectedSize || null,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-          })),
-          orderCalculations: {
-            subtotal: orderCalculations.subtotal,
-            deliveryFee: orderCalculations.deliveryFee,
-            discount: orderCalculations.discount,
-            processingFee: orderCalculations.processingFee,
-            total: orderCalculations.total,
-          },
-        }),
-      }).then(res => {
-        if (!res.ok) {
-          console.error("Email notification API responded with error status:", res.status);
-        } else {
-          console.log("Email notification queued successfully");
-        }
-      }).catch(emailErr => {
-        console.error("Email notification background trigger error:", emailErr);
-      });
-
-      return docRef.id;
-    } catch (error) {
-      setSubmittingInvoice(false);
-      setIsPaymentLoading(false);
-      handleFirestoreError(error, OperationType.CREATE, path);
-      throw error;
-    }
+    return "";
   };
 
   const handleCheckoutSubmit = async (e: FormEvent) => {
@@ -349,39 +265,59 @@ Expected Delivery/Collection Time: ${expectedTime}
       window.open(whatsappUrl, "_blank");
     } else {
       setIsPaymentLoading(true);
+      setSubmittingInvoice(true);
       setPaymentError(null);
 
       let redirectTimeout: any = null;
 
       try {
-        const trackingNumber = generateTrackingNumber();
-        const orderId = await submitOrder(trackingNumber);
+        // Send data directly to the server side checkout endpoint to initialize securely
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            email: email.trim(),
+            companyName: companyName.trim(),
+            deliveryMethod,
+            address: address.trim(),
+            cartItems: cartItems.map(item => ({
+              menuItem: {
+                name: item.menuItem.name,
+                id: item.menuItem.id,
+                basePrice: item.menuItem.basePrice
+              },
+              selectedFlavor: item.selectedFlavor || null,
+              selectedSize: item.selectedSize || null,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice
+            })),
+            orderCalculations: {
+              subtotal: orderCalculations.subtotal,
+              deliveryFee: orderCalculations.deliveryFee,
+              discount: orderCalculations.discount,
+              processingFee: orderCalculations.processingFee,
+              total: orderCalculations.total
+            },
+            paymentMethod: "card_payfast"
+          })
+        });
 
-        // Prep PayFast configurations
-        const payfastMerchantId = import.meta.env.VITE_PAYFAST_MERCHANT_ID || "10000100";
-        const payfastMerchantKey = import.meta.env.VITE_PAYFAST_MERCHANT_KEY || "46ca4f5e0141e";
-        const returnUrl = `${window.location.origin}?payment=success&orderId=${orderId}&trackingCode=${trackingNumber}`;
-        const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to initialize secure checkout session");
+        }
 
-        // Build redirect URL query parameters for GET method redirection as standard secure fallbacks
-        const params = new URLSearchParams();
-        params.append("merchant_id", payfastMerchantId);
-        params.append("merchant_key", payfastMerchantKey);
-        params.append("return_url", returnUrl);
-        params.append("cancel_url", window.location.href);
-        params.append("notify_url", window.location.origin);
-        params.append("m_payment_id", orderId);
-        params.append("amount", orderCalculations.total.toFixed(2));
-        params.append("item_name", `Bakery Order #${trackingNumber} (${totalQuantity} items)`);
-        params.append("name_first", customerName.trim());
-        params.append("cell_number", customerPhone.trim());
-
-        const payfastUrl = `https://www.payfast.co.za/eng/process?${params.toString()}`;
+        const checkoutData = await response.json();
+        const { orderId, trackingNumber, payfastUrl, payfastFields } = checkoutData;
 
         // Breakout redirection flow using both window breakout and programmatic form POST with custom target
         let redirected = false;
 
-        // Plan A: Top-level breakout redirect
+        // Plan A: Top-level breakout redirect using get-based URL returned by API
         try {
           if (window.top && window.top !== window.self) {
             console.log("Iframe detected - breaking out to PayFast via top window location");
@@ -398,7 +334,6 @@ Expected Delivery/Collection Time: ${expectedTime}
             const form = document.createElement("form");
             form.action = "https://www.payfast.co.za/eng/process";
             form.method = "POST";
-            // If inside an iframe, use _blank to break out of security sandboxes
             form.target = (window.top && window.top !== window.self) ? "_blank" : "_top";
 
             const addField = (name: string, value: string) => {
@@ -409,16 +344,9 @@ Expected Delivery/Collection Time: ${expectedTime}
               form.appendChild(input);
             };
 
-            addField("merchant_id", payfastMerchantId);
-            addField("merchant_key", payfastMerchantKey);
-            addField("return_url", returnUrl);
-            addField("cancel_url", window.location.href);
-            addField("notify_url", window.location.origin);
-            addField("m_payment_id", orderId);
-            addField("amount", orderCalculations.total.toFixed(2));
-            addField("item_name", `Bakery Order #${trackingNumber} (${totalQuantity} items)`);
-            addField("name_first", customerName.trim());
-            addField("cell_number", customerPhone.trim());
+            Object.entries(payfastFields).forEach(([key, value]: [string, any]) => {
+              addField(key, value);
+            });
 
             document.body.appendChild(form);
             form.submit();
@@ -447,6 +375,7 @@ Expected Delivery/Collection Time: ${expectedTime}
         setPaymentError(error.message || "Unable to queue order or open secure PayFast portal. Please try again.");
         setIsPaymentLoading(false);
         setSubmittingInvoice(false);
+        if (redirectTimeout) clearTimeout(redirectTimeout);
       }
     }
   };
