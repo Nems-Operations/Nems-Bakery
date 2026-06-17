@@ -2,14 +2,31 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
-import { initializeApp, getApps } from "firebase-admin/app";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 // Initialize Firebase Admin SDK to communicate with Firestore securely on the backend
 if (getApps().length === 0) {
-  initializeApp({
-    projectId: process.env.VITE_FIREBASE_PROJECT_ID || "react-example-dfa43"
-  });
+  const serviceAccountVar = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (serviceAccountVar) {
+    try {
+      const serviceAccount = JSON.parse(serviceAccountVar);
+      initializeApp({
+        credential: cert(serviceAccount)
+      });
+      console.log("Firebase Admin SDK successfully initialized with Service Account Credentials.");
+    } catch (err) {
+      console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT, falling back to default.", err);
+      initializeApp({
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID || "react-example-dfa43"
+      });
+    }
+  } else {
+    initializeApp({
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || "react-example-dfa43"
+    });
+    console.log("Firebase Admin SDK initialized using Project ID (Application Default Credentials).");
+  }
 }
 const db = getFirestore();
 

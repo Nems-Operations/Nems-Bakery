@@ -18,17 +18,18 @@ service cloud.firestore {
              data.product is string && 
              data.product.size() >= 1 && 
              data.product.size() <= 2048 &&
-             data.quantity is int && 
+             (data.quantity is int || data.quantity is number) && 
              data.quantity >= 1 && 
              data.quantity <= 10000 &&
              data.totalPrice is number && 
              data.totalPrice >= 0 &&
-             data.status == "Pending";
+             data.status in ["Pending", "Confirmed", "Cancelled"];
     }
 
     // Orders match block
     match /orders/{orderId} {
       allow create: if isValidOrder(request.resource.data);
+      allow update: if isValidOrder(request.resource.data);
       allow get: if true;
     }
   }
