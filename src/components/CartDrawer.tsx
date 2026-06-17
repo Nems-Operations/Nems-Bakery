@@ -271,240 +271,93 @@ Expected Delivery/Collection Time: ${expectedTime}
       let redirectTimeout: any = null;
 
       try {
-        // Automatically determine if the app should use the pure client-side checkout or server-side API.
-        // It should use client-side if hosted on GitHub Pages (static), or if explicitly specified by setting.
-        const hostname = window.location.hostname;
-        const isLocalOrPreview = hostname === "localhost" || 
-                                 hostname === "127.0.0.1" || 
-                                 hostname.endsWith(".run.app") ||
-                                 hostname.endsWith(".dev");
-        const isStaticHost = !isLocalOrPreview;
+        // --- CLIENT-SIDE DIRECT SECURE CART PERSISTENCE & PAYFAST REDIRECT ---
+        // Generates unique tracking number
+        const trackingNumber = generateTrackingNumber();
+        const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
 
-        let rawCustomApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || "";
+        const productsDescription = cartItems.map(
+          item => `${item.menuItem.name}${item.selectedFlavor ? ` (${item.selectedFlavor})` : ""}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ""} x${item.quantity}`
+        ).join(", ");
+
+        // Local order ID since database collections/writes are removed
+        const orderId = `NEMS-${trackingNumber}`;
+
+        const origin = window.location.origin;
+        const returnUrl = `${origin}?payment=success&orderId=${orderId}&trackingCode=${trackingNumber}`;
+        const cancelUrl = origin;
+
+        // Custom Static PayFast live production merchant credentials
+        const payfastMerchantId = "24926541";
+        const payfastMerchantKey = "rf1x71oxrxchi";
+
+        // Populate PayFast fields directly with sanitized inputs to prevent 400 Bad Request
+        const safeName = customerName.trim().replace(/[^a-zA-Z0-9\s]/g, "").substring(0, 100) || "Customer";
+        const safeCell = customerPhone.trim().replace(/[^0-9+]/g, ""); // Keep only digits and '+' if applicable
+        const cleanItemName = `Bakery Order ${trackingNumber}`.replace(/[^a-zA-Z0-9\s-]/g, "");
+
+        // Build item description with all details packed in clearly per guidelines
+        const cleanDescription = [
+          `Cust: ${safeName}`,
+          `Mobile: ${safeCell}`,
+          email.trim() ? `Email: ${email.trim()}` : "",
+          `Workplace: ${companyName.trim()}`,
+          `Delivery: ${deliveryMethod === "delivery" ? `to ${address.trim()}` : "Shop Pickup"}`,
+          `Items: ${productsDescription}`
+        ].filter(Boolean).join(" | ").substring(0, 255);
+
+        const payfastFields: Record<string, string> = {
+          merchant_id: payfastMerchantId,
+          merchant_key: payfastMerchantKey,
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
+          m_payment_id: orderId,
+          amount: Number(orderCalculations.total).toFixed(2),
+          item_name: cleanItemName,
+          item_description: cleanDescription,
+          name_first: safeName,
+          custom_str1: companyName.trim().substring(0, 255), // Workplace selection / Dropdown
+          custom_str2: deliveryMethod === "delivery" ? `Delivery: ${address.trim()}`.substring(0, 255) : "Pickup",
+          custom_str3: productsDescription.substring(0, 255), // Itemized Details
+          custom_str4: `Phone: ${safeCell}`.substring(0, 255)
+        };
+
+        // Add email_address if valid and present
+        const cleanEmail = email.trim().toLowerCase();
+        if (cleanEmail && cleanEmail.includes("@")) {
+          payfastFields["email_address"] = cleanEmail;
+        }
+        if (safeCell) {
+          payfastFields["cell_number"] = safeCell;
+        }
+
+        console.log("Dynamically building HTML form for Production PayFast post redirect:", payfastFields);
+
+        // Create HTML Form element programmatically as requested
+        const form = document.createElement("form");
+        form.action = "https://www.payfast.co.za/eng/process";
+        form.method = "POST";
+        // Set target attribute to '_top' or '_blank' to ensure safe breakout from iframe sandbox
+        form.target = (window.top && window.top !== window.self) ? "_blank" : "_top";
+
+        const addField = (name: string, value: string) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        };
+
+        Object.entries(payfastFields).forEach(([key, value]) => {
+          addField(key, value);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
         
-        // Normalize any empty, undefined, or null string placeholders that can get built by static CI/CD
-        if (
-          !rawCustomApiUrl || 
-          rawCustomApiUrl === "undefined" || 
-          rawCustomApiUrl === "null" || 
-          rawCustomApiUrl.trim() === "" || 
-          rawCustomApiUrl.includes("__") || 
-          rawCustomApiUrl === "placeholder"
-        ) {
-          rawCustomApiUrl = "";
-        }
+        console.log("Direct client form submit triggers redirection successfully");
 
-        const customApiUrl = rawCustomApiUrl;
-
-        // Force pure client-side checkout if running on static host where relative API routes (like /api/checkout)
-        // are not possible (and no valid absolute external API is supplied), or if forced via setting.
-        const useClientCheckout = isStaticHost && (customApiUrl === "" || !customApiUrl.startsWith("http")) || 
-                                 import.meta.env.VITE_FORCE_CLIENT_CHECKOUT === "true";
-
-        let orderId = "";
-        let trackingNumber = "";
-        let payfastUrl = "";
-        let payfastFields: Record<string, string> = {};
-
-        if (useClientCheckout) {
-          // --- PURE FRONTEND CHECKOUT FLOW (for GitHub Pages / static hosting) ---
-          console.log("Direct client-side static checkout selected (no absolute external API URL is configured or static-mode is forced). Saving to Firestore and posting securely to PayFast...");
-          
-          trackingNumber = generateTrackingNumber();
-          const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
-
-          const productsDescription = cartItems.map(
-            item => `${item.menuItem.name}${item.selectedFlavor ? ` (${item.selectedFlavor})` : ""}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ""} x${item.quantity}`
-          ).join(", ");
-
-          const finalPaymentMode = paymentMethod === "cod" ? "split_cod_eft" : "card_payfast";
-
-          // Save the order to Firestore directly from the user's browser client
-          const path = "orders";
-          const orderData = {
-            customerName: customerName.trim(),
-            phoneNumber: customerPhone.trim(),
-            email: email.trim(),
-            companyName: companyName.trim(),
-            product: productsDescription.substring(0, 2000),
-            quantity: totalQuantity,
-            totalPrice: orderCalculations.total,
-            vatAmount: 0,
-            status: "Pending",
-            orderDate: serverTimestamp(),
-            deliveryMethod,
-            deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
-            paymentMethod: finalPaymentMode,
-            paymentStatus: "PENDING_PAYMENT",
-            orderNumber: trackingNumber,
-            trackingNumber: trackingNumber,
-            paymentDetails: null,
-            cartItems: cartItems.map(item => ({
-              menuItem: {
-                name: item.menuItem.name,
-                id: item.menuItem.id,
-                basePrice: item.menuItem.basePrice
-              },
-              selectedFlavor: item.selectedFlavor || null,
-              selectedSize: item.selectedSize || null,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice
-            })),
-            orderCalculations,
-            createdAt: new Date().toISOString()
-          };
-
-          const docRef = await addDoc(collection(db, path), orderData);
-          orderId = docRef.id;
-
-          // Build PayFast integration parameters on the client
-          const payfastMerchantId = import.meta.env.VITE_PAYFAST_MERCHANT_ID || "10000100";
-          const payfastMerchantKey = import.meta.env.VITE_PAYFAST_MERCHANT_KEY || "46ca4f5e0141e";
-          
-          const origin = window.location.origin;
-          const returnUrl = `${origin}?payment=success&orderId=${orderId}&trackingCode=${trackingNumber}`;
-          const cancelUrl = origin;
-          
-          // Optionally allow pointing webhook notifications to a custom production backend/functions if configured
-          const notifyUrl = import.meta.env.VITE_WEBHOOK_URL || `${origin}/api/payfast-itn`;
-
-          payfastFields = {
-            merchant_id: payfastMerchantId,
-            merchant_key: payfastMerchantKey,
-            return_url: returnUrl,
-            cancel_url: cancelUrl,
-            notify_url: notifyUrl,
-            m_payment_id: orderId,
-            amount: orderCalculations.total.toFixed(2),
-            item_name: `Bakery Order #${trackingNumber} (${totalQuantity} items)`,
-            name_first: customerName.trim(),
-            cell_number: customerPhone.trim()
-          };
-
-          const params = new URLSearchParams();
-          Object.entries(payfastFields).forEach(([k, v]) => {
-            params.append(k, v);
-          });
-
-          payfastUrl = `https://www.payfast.co.za/eng/process?${params.toString()}`;
-
-        } else {
-          // --- SERVER SIDE API ROUTES CHECKOUT ---
-          let endpointUrl = "/api/checkout";
-          if (customApiUrl) {
-            if (customApiUrl.includes("/checkout") || customApiUrl.includes("/api/")) {
-              endpointUrl = customApiUrl;
-            } else {
-              endpointUrl = `${customApiUrl.replace(/\/$/, "")}/api/checkout`;
-            }
-          } else {
-            // Build default fallback production Firebase Cloud Functions URL as requested
-            let projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || "";
-            if (!projectId || projectId === "undefined" || projectId === "null") {
-              projectId = "react-example-dfa43";
-            }
-            endpointUrl = `https://us-central1-${projectId}.cloudfunctions.net/checkout`;
-            console.log(`No active backend URL specified; defaulting to production Cloud Function endpoint fallback: ${endpointUrl}`);
-          }
-          console.log(`Executing server-side checkout via endpoint: ${endpointUrl}`);
-
-          const response = await fetch(endpointUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              customerName: customerName.trim(),
-              customerPhone: customerPhone.trim(),
-              email: email.trim(),
-              companyName: companyName.trim(),
-              deliveryMethod,
-              address: address.trim(),
-              cartItems: cartItems.map(item => ({
-                menuItem: {
-                  name: item.menuItem.name,
-                  id: item.menuItem.id,
-                  basePrice: item.menuItem.basePrice
-                },
-                selectedFlavor: item.selectedFlavor || null,
-                selectedSize: item.selectedSize || null,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice
-              })),
-              orderCalculations: {
-                subtotal: orderCalculations.subtotal,
-                deliveryFee: orderCalculations.deliveryFee,
-                discount: orderCalculations.discount,
-                processingFee: orderCalculations.processingFee,
-                total: orderCalculations.total
-              },
-              paymentMethod: "card_payfast"
-            })
-          });
-
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || "Failed to initialize secure checkout session");
-          }
-
-          const checkoutData = await response.json();
-          orderId = checkoutData.orderId;
-          trackingNumber = checkoutData.trackingNumber;
-          payfastUrl = checkoutData.payfastUrl;
-          payfastFields = checkoutData.payfastFields;
-        }
-
-        // Breakout redirection flow using both window breakout and programmatic form POST with custom target
-        let redirected = false;
-
-        // Plan A: Top-level breakout redirect using get-based URL returned by API
-        try {
-          if (window.top && window.top !== window.self) {
-            console.log("Iframe detected - breaking out to PayFast via top window location");
-            window.top.location.href = payfastUrl;
-            redirected = true;
-          }
-        } catch (topErr) {
-          console.warn("Iframe breakout via top.location was restricted by browser sandboxing. Trying alternative methods.", topErr);
-        }
-
-        // Plan B: Programmatic form POST breakout using target="_blank"
-        if (!redirected) {
-          try {
-            const form = document.createElement("form");
-            form.action = "https://www.payfast.co.za/eng/process";
-            form.method = "POST";
-            form.target = "_blank"; // Set target to "_blank" to ensure it opens in a new tab for maximum reliability
-
-            const addField = (name: string, value: string) => {
-              const input = document.createElement("input");
-              input.type = "hidden";
-              input.name = name;
-              input.value = value;
-              form.appendChild(input);
-            };
-
-            Object.entries(payfastFields).forEach(([key, value]: [string, any]) => {
-              addField(key, value);
-            });
-
-            document.body.appendChild(form);
-            form.submit();
-            redirected = true;
-            console.log("PayFast programmatic form post submitted successfully");
-          } catch (formErr) {
-            console.error("Form submission failed, trying direct window.open fallback:", formErr);
-          }
-        }
-
-        // Plan C: Ultimate fallback window.open / window.location.href
-        if (!redirected) {
-          console.log("Redirecting utilizing window.open or standard location fallback");
-          window.open(payfastUrl, "_blank") || (window.location.href = payfastUrl);
-        }
-
-        // Configure a fail-safe timeout so that the loading spinner resets 
-        // to a friendly state instead of hanging forever if redirect is delayed/blocked
+        // Fail-safe cleanup
         redirectTimeout = setTimeout(() => {
           setIsPaymentLoading(false);
           setSubmittingInvoice(false);
