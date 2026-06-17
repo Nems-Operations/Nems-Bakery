@@ -308,7 +308,7 @@ Expected Delivery/Collection Time: ${expectedTime}
         };
 
         addField("merchant_id", "24926541");
-        addField("merchant_key", "rflx71oxrxchi");
+        addField("merchant_key", "rf1x71oxrxchi");
         
         const returnUrl = `${window.location.origin}?payment=success&orderId=${orderId}`;
         addField("return_url", returnUrl);
