@@ -219,44 +219,48 @@ export default function CartDrawer({
         } : null
       });
 
-      // Trigger checkout email automation backend script
-      try {
-        await fetch("/api/send-order-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            orderNumber: trackingNumber,
-            customerName: customerName.trim(),
-            customerPhone: customerPhone.trim(),
-            companyName: companyName.trim(),
-            deliveryMethod,
-            deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
-            email: email.trim(),
-            cartItems: cartItems.map(item => ({
-              menuItem: {
-                name: item.menuItem.name,
-                id: item.menuItem.id,
-                basePrice: item.menuItem.basePrice,
-              },
-              selectedFlavor: item.selectedFlavor || null,
-              selectedSize: item.selectedSize || null,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-            })),
-            orderCalculations: {
-              subtotal: orderCalculations.subtotal,
-              deliveryFee: orderCalculations.deliveryFee,
-              discount: orderCalculations.discount,
-              processingFee: orderCalculations.processingFee,
-              total: orderCalculations.total,
+      // Trigger checkout email automation backend script in the background without blocking the order flow
+      fetch("/api/send-order-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderNumber: trackingNumber,
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          companyName: companyName.trim(),
+          deliveryMethod,
+          deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
+          email: email.trim(),
+          cartItems: cartItems.map(item => ({
+            menuItem: {
+              name: item.menuItem.name,
+              id: item.menuItem.id,
+              basePrice: item.menuItem.basePrice,
             },
-          }),
-        });
-      } catch (emailErr) {
-        console.error("Email notification trigger error:", emailErr);
-      }
+            selectedFlavor: item.selectedFlavor || null,
+            selectedSize: item.selectedSize || null,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })),
+          orderCalculations: {
+            subtotal: orderCalculations.subtotal,
+            deliveryFee: orderCalculations.deliveryFee,
+            discount: orderCalculations.discount,
+            processingFee: orderCalculations.processingFee,
+            total: orderCalculations.total,
+          },
+        }),
+      }).then(res => {
+        if (!res.ok) {
+          console.error("Email notification API responded with error status:", res.status);
+        } else {
+          console.log("Email notification queued successfully");
+        }
+      }).catch(emailErr => {
+        console.error("Email notification background trigger error:", emailErr);
+      });
 
       return docRef.id;
     } catch (error) {
@@ -364,8 +368,10 @@ Expected Delivery/Collection Time: ${expectedTime}
           form.appendChild(input);
         };
 
-        addField("merchant_id", import.meta.env.VITE_PAYFAST_MERCHANT_ID || "");
-        addField("merchant_key", import.meta.env.VITE_PAYFAST_MERCHANT_KEY || "");
+        const payfastMerchantId = import.meta.env.VITE_PAYFAST_MERCHANT_ID || "10000100";
+        const payfastMerchantKey = import.meta.env.VITE_PAYFAST_MERCHANT_KEY || "46ca4f5e0141e";
+        addField("merchant_id", payfastMerchantId);
+        addField("merchant_key", payfastMerchantKey);
         
         const returnUrl = `${window.location.origin}?payment=success&orderId=${orderId}&trackingCode=${trackingNumber}`;
         addField("return_url", returnUrl);
