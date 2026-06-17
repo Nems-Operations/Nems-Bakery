@@ -5,7 +5,7 @@
 
 import { useState, useMemo, FormEvent, useEffect } from "react";
 import { CartItem } from "../types";
-import { X, Trash2, ShoppingBag, Truck, CheckCircle, Clock } from "lucide-react";
+import { X, Trash2, ShoppingBag, Truck, CheckCircle, Clock, Copy, MessageSquare } from "lucide-react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 
@@ -33,11 +33,16 @@ export default function CartDrawer({
   const [customerPhone, setCustomerPhone] = useState("");
   const [address, setAddress] = useState("");
   const [isOrdered, setIsOrdered] = useState(false);
+  const [successTrackingNumber, setSuccessTrackingNumber] = useState<string | null>(null);
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<"standard" | "cod">("standard");
   const [expectedDate, setExpectedDate] = useState("");
   const [expectedTime, setExpectedTime] = useState("");
+
+  const generateTrackingNumber = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
 
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; type: "percentage" | "amount"; value: number } | null>(null);
@@ -62,6 +67,8 @@ export default function CartDrawer({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("payment") === "success") {
+      const trackingCode = params.get("trackingCode");
+      setSuccessTrackingNumber(trackingCode);
       setIsOrdered(true);
       onClearCart();
       onOpen?.();
@@ -174,7 +181,7 @@ export default function CartDrawer({
     setCouponInput("");
   };
 
-  const submitOrder = async (): Promise<string> => {
+  const submitOrder = async (trackingNumber: string): Promise<string> => {
     setSubmittingInvoice(true);
 
     const productsDescription = cartItems.map(
@@ -200,6 +207,8 @@ export default function CartDrawer({
         deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
         paymentMethod: finalPaymentMode,
         paymentStatus: "Pending",
+        orderNumber: trackingNumber,
+        trackingNumber: trackingNumber,
         paymentDetails: finalPaymentMode === "split_cod_eft" ? {
           cod_amount: orderCalculations.codTotal,
           eft_amount: orderCalculations.eftTotal
@@ -296,7 +305,8 @@ Expected Delivery/Collection Time: ${expectedTime}
       setPaymentError(null);
 
       try {
-        const orderId = await submitOrder();
+        const trackingNumber = generateTrackingNumber();
+        const orderId = await submitOrder(trackingNumber);
 
         const form = document.createElement("form");
         form.action = "https://www.payfast.co.za/eng/process";
@@ -311,10 +321,10 @@ Expected Delivery/Collection Time: ${expectedTime}
           form.appendChild(input);
         };
 
-        addField("merchant_id", "24926541");
-        addField("merchant_key", "rf1x71oxrxchi");
+        addField("merchant_id", import.meta.env.VITE_PAYFAST_MERCHANT_ID || "");
+        addField("merchant_key", import.meta.env.VITE_PAYFAST_MERCHANT_KEY || "");
         
-        const returnUrl = `${window.location.origin}?payment=success&orderId=${orderId}`;
+        const returnUrl = `${window.location.origin}?payment=success&orderId=${orderId}&trackingCode=${trackingNumber}`;
         addField("return_url", returnUrl);
         addField("cancel_url", window.location.href);
         addField("notify_url", window.location.origin);
@@ -323,7 +333,7 @@ Expected Delivery/Collection Time: ${expectedTime}
         addField("amount", orderCalculations.total.toFixed(2));
         
         const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
-        addField("item_name", `Bakery Order #${orderId.substring(0, 6).toUpperCase()} (${totalQuantity} items)`);
+        addField("item_name", `Bakery Order #${trackingNumber} (${totalQuantity} items)`);
         
         addField("name_first", customerName.trim());
         addField("cell_number", customerPhone.trim());
@@ -341,6 +351,7 @@ Expected Delivery/Collection Time: ${expectedTime}
   const handleOkClose = () => {
     onClearCart();
     setIsOrdered(false);
+    setSuccessTrackingNumber(null);
     setCustomerName("");
     setCustomerPhone("");
     setAddress("");
@@ -386,60 +397,129 @@ Expected Delivery/Collection Time: ${expectedTime}
             {/* Core Body Container */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {isOrdered ? (
-                // Order Successful Screen Design with Gold trims
-                <div className="flex flex-col items-center justify-center h-full text-center space-y-6 py-8">
-                  <div className="h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-200 shadow-sm animate-pulse">
-                    <CheckCircle className="h-10 w-10 stroke-[2.5]" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h3 className="font-serif text-xl font-bold text-stone-900">Sweet Order Placed!</h3>
-                    <p className="text-xs text-stone-500 max-w-xs mx-auto">
-                      Thank you for cooking with Nems. Your order is registered in our oven scheduling dashboard. We will message your phone shortly.
-                    </p>
-                  </div>
+                successTrackingNumber ? (
+                  // Visual "Order Confirmed" Success Screen (UI/UX Update)
+                  <div className="flex flex-col items-center justify-center min-h-[440px] text-center space-y-6 py-6 font-sans">
+                    {/* Big Green Checkmark */}
+                    <div className="h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-200 shadow-sm animate-bounce">
+                      <CheckCircle className="h-10 w-10 stroke-[2.5]" />
+                    </div>
 
-                  <div className="w-full bg-[#FAF9F5] border border-amber-200 p-4 rounded-2xl text-left space-y-3">
-                    <span className="text-[10px] uppercase font-black text-[#D4AF37] tracking-widest block">Preparation Dispatch:</span>
+                    <div className="space-y-2">
+                      <h3 className="font-sans text-2xl font-black text-emerald-900 tracking-tight">ORDER CONFIRMED!</h3>
+                      <p className="text-xs text-stone-500 max-w-xs mx-auto">
+                        Your payment was successfully processed. Thank you for choosing Nems Bakery!
+                      </p>
+                    </div>
+
+                    {/* Order Number Display */}
+                    <div className="w-full bg-stone-50 border border-stone-200 p-5 rounded-2xl text-center space-y-1">
+                      <span className="text-[10px] uppercase font-black text-stone-400 tracking-widest block">ORDER TRACKING NUMBER</span>
+                      <span className="text-4xl font-extrabold text-stone-900 tracking-wider block font-mono">
+                        #{successTrackingNumber}
+                      </span>
+                    </div>
+
+                    {/* Notice Text */}
+                    <p className="text-xs text-stone-600 font-medium px-4 leading-relaxed">
+                      Please take a screenshot of this screen or copy your order details below for your order tracking.
+                    </p>
+
+                    {/* Action Utilities: Buttons */}
+                    <div className="w-full space-y-3 pt-2">
+                      {/* Copy Order Details Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const text = `Nems Bakery Order #${successTrackingNumber} - Thank you for your purchase!`;
+                          navigator.clipboard.writeText(text);
+                          alert("Order details copied to clipboard!");
+                        }}
+                        className="w-full rounded-xl bg-white border-2 border-stone-900 hover:bg-stone-50 text-stone-900 py-3 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      >
+                        <Copy className="h-4 w-4 shrink-0 text-stone-700" />
+                        <span>Copy Order Details</span>
+                      </button>
+
+                      {/* Send to WhatsApp Helper Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const message = `Hello Nems Bakery! I have successfully paid for my order. My 6-digit tracking code is #${successTrackingNumber}. Here is my proof of purchase!`;
+                          const url = `https://wa.me/27637862408?text=${encodeURIComponent(message)}`;
+                          window.open(url, "_blank");
+                        }}
+                        className="w-full rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white py-3 text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-sm cursor-pointer"
+                      >
+                        <MessageSquare className="h-4 w-4 shrink-0 text-white" />
+                        <span>Send to WhatsApp</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleOkClose}
+                      className="mt-4 text-stone-500 hover:text-stone-900 text-xs font-bold uppercase tracking-wider underline cursor-pointer"
+                    >
+                      CONTINUE SHOPPING
+                    </button>
+                  </div>
+                ) : (
+                  // Order Successful Screen Design with Gold trims
+                  <div className="flex flex-col items-center justify-center h-full text-center space-y-6 py-8">
+                    <div className="h-16 w-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-200 shadow-sm animate-pulse">
+                      <CheckCircle className="h-10 w-10 stroke-[2.5]" />
+                    </div>
                     
-                    <div className="space-y-2 text-xs text-stone-900">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-[#D4AF37] shrink-0" />
-                        <span>Bake Completion Time: <strong className="text-stone-950">24-36 Hours</strong></span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Truck className="h-4 w-4 text-[#D4AF37] shrink-0" />
-                        <span>Method Selection: <strong className="text-stone-950">{deliveryMethod === "collect" ? "Free Shop Pickup" : "Courier Delivery"}</strong></span>
-                      </div>
-                      <div className="border-t border-amber-200/40 pt-2 text-[10px] text-[#555] font-medium space-y-1.5 w-full">
-                        {hasSmallOrders && paymentMethod === "cod" ? (
-                          hasNormalOrders ? (
-                            <div className="space-y-1">
-                              <span className="text-stone-900 font-bold uppercase tracking-wider text-[9px] block">Split Payment Instructions:</span>
-                              <p>🧁 <strong className="text-stone-950">Daily Treats (Cash on Delivery):</strong> Please prepare <strong className="text-amber-800 font-mono font-bold">R {orderCalculations.codTotal.toFixed(2)}</strong> in cash to settle on delivery.</p>
-                              <p>🎂 <strong className="text-stone-950">Bulk Catering (Instant EFT / Card):</strong> The remaining <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.eftTotal.toFixed(2)}</strong> must be settled via EFT before delivery.</p>
-                            </div>
+                    <div className="space-y-2">
+                      <h3 className="font-serif text-xl font-bold text-stone-900">Sweet Order Placed!</h3>
+                      <p className="text-xs text-stone-500 max-w-xs mx-auto">
+                        Thank you for cooking with Nems. Your order is registered in our oven scheduling dashboard. We will message your phone shortly.
+                      </p>
+                    </div>
+
+                    <div className="w-full bg-[#FAF9F5] border border-amber-200 p-4 rounded-2xl text-left space-y-3">
+                      <span className="text-[10px] uppercase font-black text-[#D4AF37] tracking-widest block">Preparation Dispatch:</span>
+                      
+                      <div className="space-y-2 text-xs text-stone-900">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-[#D4AF37] shrink-0" />
+                          <span>Bake Completion Time: <strong className="text-stone-950">24-36 Hours</strong></span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Truck className="h-4 w-4 text-[#D4AF37] shrink-0" />
+                          <span>Method Selection: <strong className="text-stone-950">{deliveryMethod === "collect" ? "Free Shop Pickup" : "Courier Delivery"}</strong></span>
+                        </div>
+                        <div className="border-t border-amber-200/40 pt-2 text-[10px] text-[#555] font-medium space-y-1.5 w-full">
+                          {hasSmallOrders && paymentMethod === "cod" ? (
+                            hasNormalOrders ? (
+                              <div className="space-y-1">
+                                <span className="text-stone-900 font-bold uppercase tracking-wider text-[9px] block">Split Payment Instructions:</span>
+                                <p>🧁 <strong className="text-stone-950">Daily Treats (Cash on Delivery):</strong> Please prepare <strong className="text-amber-800 font-mono font-bold">R {orderCalculations.codTotal.toFixed(2)}</strong> in cash to settle on delivery.</p>
+                                <p>🎂 <strong className="text-stone-950">Bulk Catering (Instant EFT / Card):</strong> The remaining <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.eftTotal.toFixed(2)}</strong> must be settled via EFT before delivery.</p>
+                              </div>
+                            ) : (
+                              <p>
+                                Payment option is confirmed as <strong className="text-stone-950">Cash on Delivery (COD)</strong>. Please prepare exactly <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> in cash for collection or delivery verification.
+                              </p>
+                            )
                           ) : (
                             <p>
-                              Payment option is confirmed as <strong className="text-stone-950">Cash on Delivery (COD)</strong>. Please prepare exactly <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> in cash for collection or delivery verification.
+                              A dynamic quote receipt copy has been sent to your phone <strong className="text-stone-950">{customerPhone}</strong>. The total of <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> can be paid altogether via secure instant EFT or card.
                             </p>
-                          )
-                        ) : (
-                          <p>
-                            A dynamic quote receipt copy has been sent to your phone <strong className="text-stone-950">{customerPhone}</strong>. The total of <strong className="text-stone-950 font-mono font-bold">R {orderCalculations.total.toFixed(2)}</strong> can be paid altogether via secure instant EFT or card.
-                          </p>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <button
-                    onClick={handleOkClose}
-                    className="w-full rounded-full bg-stone-950 hover:bg-[#D4AF37] hover:text-stone-900 py-3 text-xs font-bold uppercase tracking-widest text-white transition-all shadow-sm"
-                  >
-                    Got It, Continue Shopping
-                  </button>
-                </div>
+                    <button
+                      onClick={handleOkClose}
+                      className="w-full rounded-full bg-stone-950 hover:bg-[#D4AF37] hover:text-stone-900 py-3 text-xs font-bold uppercase tracking-widest text-white transition-all shadow-sm"
+                    >
+                      Got It, Continue Shopping
+                    </button>
+                  </div>
+                )
               ) : cartItems.length === 0 ? (
                 // Empty Bag Design
                 <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-12">

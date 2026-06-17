@@ -8,13 +8,13 @@ import { getFirestore, doc, getDocFromServer } from "firebase/firestore";
 
 // Active Firebase project credentials provided by the user
 const firebaseConfig = {
-  apiKey: "AIzaSyCMHkWjF1ovQgW51jd3xBpknypnrUHA2U0",
-  authDomain: "nems-bakery.firebaseapp.com",
-  projectId: "nems-bakery",
-  storageBucket: "nems-bakery.firebasestorage.app",
-  messagingSenderId: "B6006922843",
-  appId: "1:86006922843:web:1d859b0878a49631e5097e",
-  measurementId: "G-46VV931D02"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
 };
 
 // Initialize Firebase
