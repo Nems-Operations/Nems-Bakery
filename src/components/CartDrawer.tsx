@@ -6,8 +6,6 @@
 import { useState, useMemo, FormEvent, useEffect } from "react";
 import { CartItem } from "../types";
 import { X, Trash2, ShoppingBag, Truck, CheckCircle, Clock, Copy, MessageSquare } from "lucide-react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db, handleFirestoreError, OperationType } from "../firebase";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -329,6 +327,139 @@ Expected Delivery/Collection Time: ${expectedTime}
         }
         if (safeCell) {
           payfastFields["cell_number"] = safeCell;
+        }
+
+        // 1. Prepare HTML/text message for email dispatch
+        const itemsHTML = cartItems.map(item => `
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1;">
+              <strong>${item.menuItem.name}</strong>
+              ${item.selectedFlavor ? `<br/><span style="font-size: 11px; color: #666;">Flavor: ${item.selectedFlavor}</span>` : ""}
+              ${item.selectedSize ? `<br/><span style="font-size: 11px; color: #666;">Size: ${item.selectedSize}</span>` : ""}
+            </td>
+            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1; text-align: center;">${item.quantity}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1; text-align: right;">R ${Number(item.unitPrice).toFixed(2)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1; text-align: right;">R ${Number(item.unitPrice * item.quantity).toFixed(2)}</td>
+          </tr>
+        `).join("");
+
+        const emailContentHTML = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; color: #333; background-color: #fcfcfc;">
+            <div style="text-align: center; border-bottom: 2px solid #C5A028; padding-bottom: 20px; margin-bottom: 20px;">
+              <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Nems Bakery & Catering Co.</h1>
+              <p style="color: #C5A028; margin: 5px 0 0 0; font-size: 14px; font-weight: bold; letter-spacing: 1px;">ORDER CONFIRMATION</p>
+            </div>
+            
+            <div style="background-color: #f7f7f7; border-left: 4px solid #C5A028; padding: 15px; margin-bottom: 20px; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0; font-size: 16px;"><strong>Order ID:</strong> <span style="font-family: monospace; font-weight: bold; color: #C5A028;">${orderId}</span></p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">Status: Pending Payment (Redirected to Secure PayFast)</p>
+            </div>
+
+            <h2 style="font-size: 16px; margin-bottom: 10px; color: #1a1a1a; border-bottom: 1px solid #eee; padding-bottom: 5px;">Customer Details</h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
+              <tr>
+                <td style="padding: 4px 0; color: #666; width: 140px;">Customer Name:</td>
+                <td style="padding: 4px 0; font-weight: bold;">${safeName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Mobile:</td>
+                <td style="padding: 4px 0; font-weight: bold;">${safeCell}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Email Address:</td>
+                <td style="padding: 4px 0;">${cleanEmail || "Not Provided"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Workplace:</td>
+                <td style="padding: 4px 0;">${companyName.trim()}</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Delivery Method:</td>
+                <td style="padding: 4px 0; font-weight: bold; text-transform: capitalize;">${deliveryMethod}</td>
+              </tr>
+              ${deliveryMethod === "delivery" ? `
+              <tr>
+                <td style="padding: 4px 0; color: #666;">Delivery Address:</td>
+                <td style="padding: 4px 0;">${address.trim()}</td>
+              </tr>` : ""}
+            </table>
+
+            <h2 style="font-size: 16px; margin-bottom: 10px; color: #1a1a1a; border-bottom: 1px solid #eee; padding-bottom: 5px;">Order Summary</h2>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+              <thead>
+                <tr style="background-color: #f4f4f4;">
+                  <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Item</th>
+                  <th style="padding: 8px; text-align: center; border-bottom: 2px solid #ddd; width: 50px;">Qty</th>
+                  <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd; width: 70px;">Unit</th>
+                  <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd; width: 80px;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHTML}
+              </tbody>
+            </table>
+
+            <div style="margin-left: auto; width: 250px; font-size: 14px; border-top: 2px solid #C5A028; padding-top: 10px;">
+              <table style="width: 100%;">
+                <tr>
+                  <td style="padding: 2px 0; color: #666;">Subtotal:</td>
+                  <td style="padding: 2px 0; text-align: right; font-family: monospace;">R ${Number(orderCalculations.subtotal).toFixed(2)}</td>
+                </tr>
+                ${orderCalculations.deliveryFee > 0 ? `
+                <tr>
+                  <td style="padding: 2px 0; color: #666;">Delivery Fee:</td>
+                  <td style="padding: 2px 0; text-align: right; font-family: monospace;">R ${Number(orderCalculations.deliveryFee).toFixed(2)}</td>
+                </tr>` : ""}
+                ${orderCalculations.processingFee > 0 ? `
+                <tr>
+                  <td style="padding: 2px 0; color: #666;">Processing Fee:</td>
+                  <td style="padding: 2px 0; text-align: right; font-family: monospace;">R ${Number(orderCalculations.processingFee).toFixed(2)}</td>
+                </tr>` : ""}
+                <tr>
+                  <td style="padding: 6px 0; font-weight: bold; font-size: 16px;">Grand Total:</td>
+                  <td style="padding: 6px 0; text-align: right; font-weight: bold; font-size: 16px; color: #C5A028; font-family: monospace;">R ${Number(orderCalculations.total).toFixed(2)}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; font-size: 11px; color: #999;">
+              <p style="margin: 0;">Thank you for ordering from Nems Bakery & Catering Co.!</p>
+              <p style="margin: 5px 0 0 0;">This invoice has been dispatched before PayFast processing.</p>
+            </div>
+          </div>
+        `;
+
+        // 2. Setup Direct Gmail/SMTP configuration
+        const emailPayload: any = {
+          nocache: Math.floor(1e6 * Math.random() + 1),
+          Action: "Send",
+          Host: "smtp.gmail.com",
+          Username: "orders.nemsbakery@gmail.com",
+          Password: "oiinzuasuecfjkgo",
+          From: "orders.nemsbakery@gmail.com",
+          Subject: `New Bakery Order #${trackingNumber} - ${safeName} (${companyName.trim()})`,
+          Body: emailContentHTML,
+          To: cleanEmail || "orders.nemsbakery@gmail.com"
+        };
+
+        if (cleanEmail && cleanEmail !== "orders.nemsbakery@gmail.com") {
+          emailPayload.Cc = "orders.nemsbakery@gmail.com";
+        }
+
+        console.log("Dispatching direct email confirmation via native fetch to SmtpJS API...", emailPayload);
+
+        try {
+          const response = await fetch("https://smtpjs.com/v1/smtp.js", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: JSON.stringify(emailPayload)
+          });
+          const responseText = await response.text();
+          console.log("Email dispatch successfully concluded with response:", responseText);
+        } catch (emailErr) {
+          console.error("Failed to send order email:", emailErr);
         }
 
         console.log("Dynamically building HTML form for Production PayFast post redirect:", payfastFields);

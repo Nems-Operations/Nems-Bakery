@@ -98,7 +98,7 @@ export const MENU_ITEMS: MenuItem[] = [
     id: "gourmet-macarons",
     name: "Nems Signature Pastel Macarons",
     category: Category.DESSERTS,
-    description: "Celebrating our brand logo! Delicate almond macarons filled with Belgian chocolate ganache and strawberry creme. Styled in stunning soft pink and mint-blue with subtle gold leafing.",
+    description: "Delicate almond macarons filled with Belgian chocolate ganache and strawberry creme. Styled in stunning soft pink and mint-blue with subtle gold leafing.",
     image: "./images/gourmet_macarons.png",
     isBucket: false,
     basePrice: 180, // For 12pcs

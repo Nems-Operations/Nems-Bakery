@@ -91,11 +91,6 @@ export default function Footer() {
         {/* Bottom footer bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-500 font-medium">
           <p>© {new Date().getFullYear()} Nems Bakery and Catering Co. (Pty) Ltd. Johannesburg. All rights reserved.</p>
-          <p className="flex items-center mt-3 sm:mt-0">
-            <span>Lovingly styled in colors of the macaron logo </span>
-            <Heart className="h-3.5 w-3.5 text-[#ECA1A6] fill-[#ECA1A6] mx-1" />
-            <span>& gold</span>
-          </p>
         </div>
 
       </div>
