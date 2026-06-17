@@ -107,7 +107,10 @@ export default function CartDrawer({
 
     const subtotalAfterDiscount = Math.max(0, subtotal - discount);
     
-    const total = Math.round((subtotalAfterDiscount + deliveryFee) * 100) / 100;
+    // Fee only applies to card option ('PAY WITH CARD / Instant EFT' or 'EFT BOTH TOGETHER')
+    const processingFee = paymentMethod === "standard" ? 3 : 0;
+    
+    const total = Math.round((subtotalAfterDiscount + deliveryFee + processingFee) * 100) / 100;
     
     const discountRatio = subtotal > 0 ? (subtotalAfterDiscount / subtotal) : 1;
     
@@ -123,9 +126,10 @@ export default function CartDrawer({
       subtotalAfterDiscount,
       total,
       codTotal,
-      eftTotal
+      eftTotal,
+      processingFee
     };
-  }, [smallSubtotal, normalSubtotal, deliveryFee, appliedCoupon]);
+  }, [smallSubtotal, normalSubtotal, deliveryFee, appliedCoupon, paymentMethod]);
 
   const handleApplyCoupon = (code: string) => {
     const uppercaseCode = code.trim().toUpperCase();
@@ -701,6 +705,13 @@ Expected Delivery/Collection Time: ${expectedTime}
                       <div className="flex justify-between text-[11px] text-stone-500">
                         <span>🚚 Courier Fee:</span>
                         <strong className="text-stone-800 font-mono">R {deliveryFee.toFixed(2)}</strong>
+                      </div>
+                    )}
+
+                    {paymentMethod === "standard" && (
+                      <div className="flex justify-between text-[11px] text-stone-500">
+                        <span>Payment Processing Fee:</span>
+                        <span className="font-mono">R {orderCalculations.processingFee.toFixed(2)}</span>
                       </div>
                     )}
 
