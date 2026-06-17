@@ -31,6 +31,8 @@ export default function CartDrawer({
   const [deliveryMethod, setDeliveryMethod] = useState<"collect" | "delivery">("collect");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [address, setAddress] = useState("");
   const [isOrdered, setIsOrdered] = useState(false);
   const [successTrackingNumber, setSuccessTrackingNumber] = useState<string | null>(null);
@@ -197,6 +199,8 @@ export default function CartDrawer({
       const docRef = await addDoc(collection(db, path), {
         customerName: customerName.trim(),
         phoneNumber: customerPhone.trim(),
+        email: email.trim(),
+        companyName: companyName.trim(),
         product: productsDescription.substring(0, 2000),
         quantity: totalQuantity,
         totalPrice: orderCalculations.total,
@@ -354,6 +358,8 @@ Expected Delivery/Collection Time: ${expectedTime}
     setSuccessTrackingNumber(null);
     setCustomerName("");
     setCustomerPhone("");
+    setEmail("");
+    setCompanyName("");
     setAddress("");
     setExpectedDate("");
     setExpectedTime("");
@@ -869,7 +875,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                       </div>
 
                       <div>
-                        <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Phone Number for SMS Confirmation *</label>
+                        <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Phone Number *</label>
                         <input
                           type="text"
                           placeholder="e.g. 072 123 4567"
@@ -880,18 +886,54 @@ Expected Delivery/Collection Time: ${expectedTime}
                         {errors.customerPhone && <p className="text-[10px] text-rose-500 mt-0.5">{errors.customerPhone}</p>}
                       </div>
 
+                      <div>
+                        <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Email Address (Optional)</label>
+                        <input
+                          type="email"
+                          placeholder="e.g. custom@domain.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                        />
+                        <p className="text-[10px] text-stone-500 mt-0.5">
+                          Enter your email to receive your 6-digit order confirmation number directly.
+                        </p>
+                      </div>
+
                       {deliveryMethod === "delivery" && (
-                        <div>
-                          <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Physical Delivery Address in SA *</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. 834 9th avenue, Alexandra, Johannesburg"
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
-                          />
-                          {errors.address && <p className="text-[10px] text-rose-500 mt-0.5">{errors.address}</p>}
-                        </div>
+                        <>
+                          <div>
+                            <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Company / Workplace Name (Optional)</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Gallagher Convention Centre"
+                              value={companyName}
+                              onChange={(e) => setCompanyName(e.target.value)}
+                              list="midrand-workplaces"
+                              className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                            />
+                            <datalist id="midrand-workplaces">
+                              <option value="RTIA (Road Traffic Infringement Agency)" />
+                              <option value="PURCO SA (Public Procurement Co-operative)" />
+                              <option value="Nova Pioneer Midrand Pre-Primary" />
+                              <option value="Gallagher Convention Centre" />
+                              <option value="Midrand Corporate Park" />
+                              <option value="Grand Central Airport Business Park" />
+                            </datalist>
+                          </div>
+
+                          <div>
+                            <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Delivery Address *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 834 9th avenue, Alexandra, Johannesburg"
+                              value={address}
+                              onChange={(e) => setAddress(e.target.value)}
+                              className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                            />
+                            {errors.address && <p className="text-[10px] text-rose-500 mt-0.5">{errors.address}</p>}
+                          </div>
+                        </>
                       )}
 
                       {/* Cash Option for all configurations */}
