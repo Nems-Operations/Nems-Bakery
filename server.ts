@@ -2,33 +2,21 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
-// Initialize Firebase Admin SDK to communicate with Firestore securely on the backend
-if (getApps().length === 0) {
-  const serviceAccountVar = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (serviceAccountVar) {
-    try {
-      const serviceAccount = JSON.parse(serviceAccountVar);
-      initializeApp({
-        credential: cert(serviceAccount)
-      });
-      console.log("Firebase Admin SDK successfully initialized with Service Account Credentials.");
-    } catch (err) {
-      console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT, falling back to default.", err);
-      initializeApp({
-        projectId: process.env.VITE_FIREBASE_PROJECT_ID || "react-example-dfa43"
-      });
-    }
-  } else {
-    initializeApp({
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID || "react-example-dfa43"
-    });
-    console.log("Firebase Admin SDK initialized using Project ID (Application Default Credentials).");
-  }
-}
-const db = getFirestore();
+// Initialize client Firebase SDK to connect to Firestore on the backend
+const firebaseConfig = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "react-example-dfa43",
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKEL || process.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VITE_FIREBASE_APP_ID
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
 async function startServer() {
   const app = express();
@@ -79,7 +67,7 @@ async function startServer() {
         totalPrice: orderCalculations.total,
         vatAmount: 0,
         status: "Pending",
-        orderDate: FieldValue.serverTimestamp(),
+        orderDate: serverTimestamp(),
         deliveryMethod,
         deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
         paymentMethod: finalPaymentMode,
@@ -92,7 +80,7 @@ async function startServer() {
         createdAt: new Date().toISOString()
       };
 
-      const docRef = await db.collection("orders").add(orderData);
+      const docRef = await addDoc(collection(db, "orders"), orderData);
       const orderId = docRef.id;
 
       // 2. Prep PayFast redirect URL and POST parameters
@@ -153,10 +141,10 @@ async function startServer() {
       }
 
       // Fetch the order document from Firestore
-      const orderDocRef = db.collection("orders").doc(m_payment_id);
-      const orderDoc = await orderDocRef.get();
+      const orderDocRef = doc(db, "orders", m_payment_id);
+      const orderDoc = await getDoc(orderDocRef);
 
-      if (!orderDoc.exists) {
+      if (!orderDoc.exists()) {
         console.warn(`PayFast ITN order #${m_payment_id} not found in database`);
         return res.status(404).send("Order not found");
       }
@@ -171,7 +159,7 @@ async function startServer() {
         console.log(`Payment confirmed on Payfast for order id: ${m_payment_id}`);
 
         // Update database order payment status to PAID
-        await orderDocRef.update({
+        await updateDoc(orderDocRef, {
           paymentStatus: "PAID",
           status: "Confirmed",
           payfastPaymentId: pf_payment_id || null,
