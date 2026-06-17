@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ArrowRight, Sparkles, MapPin, Truck, Award, ShieldAlert } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, Sparkles, Truck, ShieldAlert } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 interface HeroProps {
   onStartOrder: () => void;
@@ -11,7 +13,46 @@ interface HeroProps {
   onStartDailyTreats: () => void;
 }
 
+const HERO_SLIDES = [
+  {
+    title: "Scone Buckets From",
+    priceText: "R 70",
+    image: "./images/scones_bucket_new_1780975055905.png",
+    alt: "Scones starting from R70"
+  },
+  {
+    title: "Muffins starting from",
+    priceText: "R 85",
+    image: "./images/muffins_bucket_new_1780975069955.png",
+    alt: "Muffins starting from R85"
+  },
+  {
+    title: "Premium Rusks starting from",
+    priceText: "R 100",
+    image: "./images/rusks_bucket_new_1780975098836.png",
+    alt: "Premium Rusks starting from R100"
+  },
+  {
+    title: "Crunchy Biscuits starting from",
+    priceText: "R 165",
+    image: "./images/biscuits_bucket_new_1780975085698.png",
+    alt: "Crunchy Biscuits starting from R165"
+  }
+];
+
 export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats }: HeroProps) {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 4500); // Cycles every 4.5 seconds
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const slide = HERO_SLIDES[currentSlide];
+
   return (
     <section id="hero" className="relative overflow-hidden bg-white py-16 lg:py-24 border-b border-gold">
       {/* Decorative Golden Orbs in Background */}
@@ -26,7 +67,7 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
           <div className="lg:col-span-7 space-y-8 z-10 text-ink">
             <div className="inline-flex items-center space-x-2 border border-gold bg-neutral-50/80 px-4 py-2 text-[10px] uppercase font-bold tracking-widest text-[#C5A028]">
               <Sparkles className="h-4 w-4 text-gold" />
-              <span>Gauteng's Finest Baker & Caterer</span>
+              <span>Gauteng's Finest Baker &amp; Caterer</span>
             </div>
 
             <h1 className="serif text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-ink leading-none">
@@ -65,7 +106,7 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
               <button
                 onClick={onStartOrder}
-                className="flex items-center justify-center space-x-2 bg-gold px-6 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-black transition-colors shadow-sm group"
+                className="flex items-center justify-center space-x-2 bg-gold px-6 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-black transition-colors shadow-sm group cursor-pointer"
               >
                 <span>Bakery Buckets</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -73,14 +114,14 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
 
               <button
                 onClick={onStartDailyTreats}
-                className="flex items-center justify-center space-x-2 bg-stone-950 px-6 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-gold transition-colors shadow-sm"
+                className="flex items-center justify-center space-x-2 bg-stone-950 px-6 py-4 text-xs font-bold uppercase tracking-widest text-white hover:bg-gold transition-colors shadow-sm cursor-pointer"
               >
                 <span>Order Daily Treats</span>
               </button>
 
               <button
                 onClick={onStartCustomQuote}
-                className="flex items-center justify-center space-x-2 bg-white px-6 py-4 text-xs font-bold uppercase tracking-widest text-gold border-2 border-gold hover:bg-neutral-50 hover:text-ink transition-colors"
+                className="flex items-center justify-center space-x-2 bg-white px-6 py-4 text-xs font-bold uppercase tracking-widest text-gold border-2 border-gold hover:bg-neutral-50 hover:text-ink transition-colors cursor-pointer"
               >
                 <span>Custom Packages</span>
               </button>
@@ -88,41 +129,51 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
           </div>
 
           {/* Hero Visuals Right */}
-          <div className="relative lg:col-span-5 flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-[450px] aspect-[4/3] sm:aspect-square border border-gold bg-white p-2 shadow-lg overflow-hidden group">
-              
-              {/* Core generated image */}
-              <img 
-                src="./images/bakery_hero.png" 
-                alt="Nems catering pastries display" 
-                referrerPolicy="no-referrer"
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
+          <div className="relative lg:col-span-5 flex justify-center lg:justify-end min-h-[400px] sm:min-h-[460px] w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="relative w-full max-w-[450px] aspect-[4/3] sm:aspect-square flex justify-center items-center"
+              >
+                <div className="relative w-full h-full border border-gold bg-white p-2 shadow-lg overflow-hidden group">
+                  {/* Core generated image */}
+                  <img 
+                    src={slide.image} 
+                    alt={slide.alt} 
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
 
-              {/* Decorative Macarons Overlay tag with matching colors */}
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white border border-gold p-3.5 shadow-md">
-                <div className="flex items-center space-x-3">
-                  {/* Two small visual circles matching the logo colors directly */}
-                  <div className="flex -space-x-2">
-                    <span className="h-5 w-5 rounded-full bg-[#ECA1A6] border border-white shadow-xs block" />
-                    <span className="h-5 w-5 rounded-full bg-[#A6E3E9] border border-white shadow-xs block" />
-                  </div>
-                  <div>
-                    <span className="text-[9px] uppercase tracking-widest text-gold font-bold block">Artisanal Touch</span>
-                    <span className="text-xs font-bold text-stone-950 block">Inspired by our Logo</span>
+                  {/* Decorative Macarons Overlay tag with matching colors */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white border border-gold p-3.5 shadow-md">
+                    <div className="flex items-center space-x-3">
+                      {/* Two small visual circles matching the logo colors directly */}
+                      <div className="flex -space-x-2">
+                        <span className="h-5 w-5 rounded-full bg-[#ECA1A6] border border-white shadow-xs block" />
+                        <span className="h-5 w-5 rounded-full bg-[#A6E3E9] border border-white shadow-xs block" />
+                      </div>
+                      <div>
+                        <span className="text-[9px] uppercase tracking-widest text-gold font-bold block">Artisanal Touch</span>
+                        <span className="text-xs font-bold text-stone-950 block">Inspired by our Logo</span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-gold border-b border-gold pb-0.5">
+                      🇿🇦 South Africa
+                    </div>
                   </div>
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-gold border-b border-gold pb-0.5">
-                  🇿🇦 South Africa
-                </div>
-              </div>
-            </div>
 
-            {/* Float Badge */}
-            <div className="absolute -top-3 -left-3 bg-black border border-gold text-white p-4 shadow-lg hidden sm:block">
-              <span className="serif text-3xl italic font-normal text-gold block">R 70</span>
-              <span className="text-[9px] uppercase tracking-[0.2em] text-stone-400 font-extrabold block">Scone Buckets From</span>
-            </div>
+                {/* Float Badge */}
+                <div className="absolute -top-3 -left-3 bg-black border border-gold text-white p-4 shadow-lg flex flex-col items-center justify-center min-w-[140px] z-20">
+                  <span className="serif text-3xl italic font-normal text-gold block">{slide.priceText}</span>
+                  <span className="text-[9px] uppercase tracking-[0.2em] text-stone-400 font-extrabold block text-center mt-1 leading-tight max-w-[120px]">{slide.title}</span>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
         </div>

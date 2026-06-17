@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Sparkles, ArrowRight, ArrowLeft, ShoppingBag } from "lucide-react";
 
 interface DailyTreatsPreviewProps {
@@ -87,12 +87,17 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
   const [currentIndex, setCurrentIndex] = useState(0);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const startX = useRef(0);
+  const resumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-scroll loop with ~1 second pause.
   // Pause is 1.2 seconds, plus 0.8 seconds transition.
   useEffect(() => {
-    if (isHovered) return;
+    if (isHovered || isInteracting || isDragging) return;
 
     const interval = setInterval(() => {
       setTransitionEnabled(true);
@@ -100,7 +105,7 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
     }, 2000); // 1.2s pause + 0.8s transition
 
     return () => clearInterval(interval);
-  }, [isHovered]);
+  }, [isHovered, isInteracting, isDragging]);
 
   // Wrap around seamlessly when hitting clone elements boundary (e.g. at PREVIEW_ITEMS.length)
   useEffect(() => {
@@ -114,6 +119,16 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
     }
   }, [currentIndex]);
 
+  const triggerManualPause = () => {
+    setIsInteracting(true);
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+    }
+    resumeTimeoutRef.current = setTimeout(() => {
+      setIsInteracting(false);
+    }, 3000);
+  };
+
   const handleManualNext = () => {
     setTransitionEnabled(true);
     setCurrentIndex((prev) => prev + 1);
@@ -123,6 +138,67 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
     setTransitionEnabled(true);
     setCurrentIndex((prev) => (prev === 0 ? PREVIEW_ITEMS.length - 1 : prev - 1));
   };
+
+  const onPrevClick = () => {
+    triggerManualPause();
+    handleManualPrev();
+  };
+
+  const onNextClick = () => {
+    triggerManualPause();
+    handleManualNext();
+  };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsInteracting(true);
+    setIsDragging(true);
+    setTransitionEnabled(false); // disable transition while dragging for real-time tracking
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+    }
+
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    startX.current = clientX;
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging) return;
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const deltaX = clientX - startX.current;
+    setDragOffset(deltaX);
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    setTransitionEnabled(true);
+
+    const threshold = 60; // minimum swipe threshold in pixels
+    if (dragOffset < -threshold) {
+      handleManualNext();
+    } else if (dragOffset > threshold) {
+      handleManualPrev();
+    }
+
+    setDragOffset(0);
+
+    // Resume auto-scroll after 3 seconds of perfect inactivity
+    if (resumeTimeoutRef.current) {
+      clearTimeout(resumeTimeoutRef.current);
+    }
+    resumeTimeoutRef.current = setTimeout(() => {
+      setIsInteracting(false);
+    }, 3000);
+  };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <section className="bg-stone-50 py-16 border-b border-amber-100/60 overflow-hidden relative">
@@ -148,7 +224,7 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
             <div className="flex items-center space-x-1.5 mr-2">
               <button
                 type="button"
-                onClick={handleManualPrev}
+                onClick={onPrevClick}
                 className="p-2 bg-white hover:bg-stone-950 hover:text-white border border-stone-200 text-stone-700 transition-all rounded-lg cursor-pointer"
                 aria-label="Previous Treat"
               >
@@ -156,7 +232,7 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
               </button>
               <button
                 type="button"
-                onClick={handleManualNext}
+                onClick={onNextClick}
                 className="p-2 bg-white hover:bg-stone-950 hover:text-white border border-stone-200 text-stone-700 transition-all rounded-lg cursor-pointer"
                 aria-label="Next Treat"
               >
@@ -176,9 +252,18 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
 
         {/* Sliding Viewport Segment */}
         <div 
-          className="relative w-full overflow-hidden"
+          className="relative w-full overflow-hidden select-none touch-pan-y active:cursor-grabbing"
           onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          onMouseLeave={() => {
+            setIsHovered(false);
+            if (isDragging) handleDragEnd();
+          }}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
         >
           {/* Fading Gradients to highlight depth */}
           <div className="absolute top-0 bottom-0 left-0 w-12 bg-gradient-to-r from-stone-50 to-transparent z-10 pointer-events-none" />
@@ -189,13 +274,17 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
             ref={sliderRef}
             className={`flex space-x-5 ${transitionEnabled ? "transition-transform duration-700 ease-in-out" : ""}`}
             style={{
-              transform: `translateX(calc(-${currentIndex} * (280px + 20px)))`,
+              transform: `translateX(calc(-${currentIndex} * (280px + 20px) + ${dragOffset}px))`,
             }}
           >
             {LOOPED_ITEMS.map((item, i) => (
               <div
                 key={`${item.id}-preview-${i}`}
-                onClick={() => onExplore(item.id)}
+                onClick={() => {
+                  if (Math.abs(dragOffset) < 10) {
+                    onExplore(item.id);
+                  }
+                }}
                 className="w-[280px] shrink-0 bg-white border border-gold/45 hover:border-[#D4AF37] hover:shadow-lg rounded-2xl cursor-pointer overflow-hidden transform hover:-translate-y-1.5 transition-all duration-300 group"
               >
                 {/* Product Image */}
@@ -204,7 +293,7 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
                     src={item.image}
                     alt={item.name}
                     referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
                   />
                   
                   {item.badge && !item.isComingSoon && (
@@ -256,7 +345,7 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
 
         {/* Help Tip */}
         <p className="text-center text-[10px] text-stone-400 uppercase tracking-widest mt-6 sm:mt-8">
-          💡 Click any item card above or manual scroll to inspect.
+          💡 Drag or swipe items, click manual arrows or any card to explore.
         </p>
 
       </div>
