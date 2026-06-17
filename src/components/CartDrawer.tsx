@@ -59,45 +59,18 @@ export default function CartDrawer({
     };
   }, [isPaymentLoading]);
 
-  const loadYocoSDK = (): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      if ((window as any).YocoSDK) {
-        resolve((window as any).YocoSDK);
-        return;
-      }
-      const existingScript = document.getElementById("yoco-sdk-script");
-      if (existingScript) {
-        const interval = setInterval(() => {
-          if ((window as any).YocoSDK) {
-            clearInterval(interval);
-            resolve((window as any).YocoSDK);
-          }
-        }, 100);
-        setTimeout(() => {
-          clearInterval(interval);
-          reject(new Error("Yoco SDK timeout loading."));
-        }, 10000);
-        return;
-      }
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setIsOrdered(true);
+      onClearCart();
+      onOpen?.();
 
-      const script = document.createElement("script");
-      script.id = "yoco-sdk-script";
-      script.src = "https://js.yoco.com/sdk/v1/yoco-sdk-web.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.onload = () => {
-        if ((window as any).YocoSDK) {
-          resolve((window as any).YocoSDK);
-        } else {
-          reject(new Error("Yoco SDK initialized but not found on window object."));
-        }
-      };
-      script.onerror = () => {
-        reject(new Error("Failed to load Yoco SDK script."));
-      };
-      document.body.appendChild(script);
-    });
-  };
+      // Clean up search parameters in the URL bar
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [onOpen, onClearCart]);
 
   const smallTreatItems = useMemo(() => {
     return cartItems.filter(item => item.menuItem.id.startsWith("retail-") || item.menuItem.id === "daily-muffin" || item.menuItem.id === "daily-cupcake");
@@ -197,7 +170,7 @@ export default function CartDrawer({
     setCouponInput("");
   };
 
-  const submitOrder = async (yocoToken: string | null) => {
+  const submitOrder = async (): Promise<string> => {
     setSubmittingInvoice(true);
 
     const productsDescription = cartItems.map(
@@ -207,10 +180,10 @@ export default function CartDrawer({
     const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
     const path = "orders";
 
-    let finalPaymentMode = paymentMethod === "cod" ? (hasNormalOrders ? "split_cod_eft" : "cod") : "card_yoco";
+    let finalPaymentMode = paymentMethod === "cod" ? (hasNormalOrders ? "split_cod_eft" : "cod") : "card_payfast";
 
     try {
-      await addDoc(collection(db, path), {
+      const docRef = await addDoc(collection(db, path), {
         customerName: customerName.trim(),
         phoneNumber: customerPhone.trim(),
         product: productsDescription.substring(0, 2000),
@@ -222,21 +195,19 @@ export default function CartDrawer({
         deliveryMethod,
         deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
         paymentMethod: finalPaymentMode,
-        yocoToken: yocoToken || null,
-        paymentStatus: yocoToken ? "Paid" : "Pending",
+        paymentStatus: "Pending",
         paymentDetails: finalPaymentMode === "split_cod_eft" ? {
           cod_amount: orderCalculations.codTotal,
           eft_amount: orderCalculations.eftTotal
         } : null
       });
 
-      setSubmittingInvoice(false);
-      setIsPaymentLoading(false);
-      setIsOrdered(true);
+      return docRef.id;
     } catch (error) {
       setSubmittingInvoice(false);
       setIsPaymentLoading(false);
       handleFirestoreError(error, OperationType.CREATE, path);
+      throw error;
     }
   };
 
@@ -319,48 +290,46 @@ Expected Delivery/Collection Time: ${expectedTime}
     } else {
       setIsPaymentLoading(true);
       setPaymentError(null);
-      setPaymentSuccessData(null);
-
-      // Call onClose to slide/hide-transition the cart during checkout without unmounting
-      onClose();
 
       try {
-        const YocoSDKClass = await loadYocoSDK();
-        const yoco = new YocoSDKClass({
-          publicKey: "pk_live_4ae66754jVyVqkd49524",
-        });
+        const orderId = await submitOrder();
 
-        const amountInCents = Math.round(orderCalculations.total * 100);
+        const form = document.createElement("form");
+        form.action = "https://www.payfast.co.za/eng/process";
+        form.method = "POST";
+        form.target = "_self";
 
-        yoco.showPopup({
-          amountInCents: amountInCents,
-          currency: "ZAR",
-          name: "Nems Bakery",
-          description: `Bakery Checkout Order (${cartItems.length} items)`,
-          callback: async function (result: any) {
-            if (result.error) {
-              console.error("Yoco payment error:", result.error);
-              setPaymentError(result.error.message || "Payment unsuccessful or declined.");
-              setIsPaymentLoading(false);
-              onOpen?.(); // Slides the cart sidebar right back into view
-            } else {
-              console.log("Yoco payment success. Token id:", result.id);
-              setPaymentSuccessData({ token: result.id, amount: orderCalculations.total });
-              await submitOrder(result.id);
-              onOpen?.(); // Slides the cart right back into view showing the success screen
-            }
-          },
-          onClose: function () {
-            console.log("Yoco popup closed by user.");
-            setIsPaymentLoading(false);
-            onOpen?.(); // Slides the cart sidebar right back into view
-          }
-        });
+        const addField = (name: string, value: string) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        };
+
+        addField("merchant_id", "24926541");
+        addField("merchant_key", "rflx71oxrxchi");
+        
+        const returnUrl = `${window.location.origin}?payment=success&orderId=${orderId}`;
+        addField("return_url", returnUrl);
+        addField("cancel_url", window.location.href);
+        addField("notify_url", window.location.origin);
+        
+        addField("m_payment_id", orderId);
+        addField("amount", orderCalculations.total.toFixed(2));
+        
+        const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
+        addField("item_name", `Bakery Order #${orderId.substring(0, 6).toUpperCase()} (${totalQuantity} items)`);
+        
+        addField("name_first", customerName.trim());
+        addField("cell_number", customerPhone.trim());
+
+        document.body.appendChild(form);
+        form.submit();
       } catch (error: any) {
-        console.error("Failed to load or configure Yoco SDK:", error);
-        setPaymentError(error.message || "Unable to open secure checkout portal.");
+        console.error("PayFast checkout failure:", error);
+        setPaymentError(error.message || "Unable to queue order or open secure PayFast portal. Please try again.");
         setIsPaymentLoading(false);
-        onOpen?.(); // Restore the cart if launching Yoco fails
       }
     }
   };
@@ -373,24 +342,23 @@ Expected Delivery/Collection Time: ${expectedTime}
     setAddress("");
     setExpectedDate("");
     setExpectedTime("");
-    setPaymentSuccessData(null);
     setPaymentError(null);
     handleRemoveCoupon();
     onClose();
   };
 
-  // Render the drawer if it's open OR during active payment loading (so the Yoco iframe references and closures aren't unmounted and destroyed)
-  if (!isOpen && !isPaymentLoading) return null;
+  // Render the drawer if it's open
+  if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 overflow-hidden font-sans transition-all duration-300 ${(isPaymentLoading || !isOpen) ? "z-30 bg-transparent pointer-events-none" : "z-50"}`}>
+    <div className="fixed inset-0 overflow-hidden font-sans transition-all duration-300 z-50">
       {/* Dark overlay backdrop */}
       <div 
         onClick={onClose}
-        className={`absolute inset-0 transition-opacity duration-300 ${(isPaymentLoading || !isOpen) ? "opacity-0 pointer-events-none" : "bg-stone-900/60 backdrop-blur-xs"}`} 
+        className="absolute inset-0 transition-opacity duration-300 bg-stone-900/60 backdrop-blur-xs" 
       />
 
-      <div className={`absolute inset-y-0 right-0 flex max-w-full pl-10 transition-transform duration-305 ${(isPaymentLoading || !isOpen) ? "translate-x-full pointer-events-none" : "translate-x-0"}`}>
+      <div className="absolute inset-y-0 right-0 flex max-w-full pl-10 transition-transform duration-305 translate-x-0">
         <div className="w-screen max-w-md bg-white border-l border-stone-200">
           <div className="flex h-full flex-col justify-between shadow-2xl">
             
@@ -850,7 +818,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                                 : "bg-white text-stone-800 border-stone-200 hover:border-[#D4AF37]/60"
                             }`}
                           >
-                            {hasNormalOrders && hasSmallOrders ? "EFT BOTH TOGETHER" : "PAY WITH CARD / EFT"}
+                             {hasNormalOrders && hasSmallOrders ? "EFT BOTH TOGETHER" : "PAY WITH CARD / Instant EFT"}
                           </button>
                           <button
                             type="button"
@@ -872,21 +840,11 @@ Expected Delivery/Collection Time: ${expectedTime}
                       </div>
                     </div>
 
-                    {paymentSuccessData && (
-                      <div className="mb-4 bg-emerald-50 border border-emerald-300 p-4 text-xs text-emerald-950 font-semibold flex items-start space-x-2.5 shadow-md rounded-xl animate-fade-in border-l-4 border-l-emerald-600">
-                        <CheckCircle className="h-4.5 w-4.5 text-emerald-600 shrink-0 stroke-[3]" />
-                        <div>
-                          <strong className="font-bold block uppercase tracking-wide text-emerald-800 text-[10px] tracking-widest mb-1">Yoco Payment Successful!</strong>
-                          Paid <span className="font-bold font-mono">R {paymentSuccessData.amount.toFixed(2)}</span> with Charge Token: <code className="bg-emerald-100/80 px-1.5 py-0.5 rounded text-[10.5px] font-mono text-emerald-900 font-black border border-emerald-250">{paymentSuccessData.token}</code>. Order details submitted successfully.
-                        </div>
-                      </div>
-                    )}
-
                     {paymentError && (
                       <div className="mb-4 bg-rose-50 border border-rose-300 p-4 text-xs text-rose-950 font-semibold flex items-start space-x-2.5 shadow-md rounded-xl animate-fade-in border-l-4 border-l-rose-500">
                         <span className="text-rose-600 font-bold text-lg shrink-0 leading-none">⚠️</span>
                         <div>
-                          <strong className="font-bold block uppercase tracking-wide text-rose-800 text-[10px] tracking-widest mb-1">Secure Checkout Error</strong>
+                          <strong className="font-bold block uppercase tracking-wide text-rose-800 text-[10px] tracking-widest mb-1">Secure PayFast Checkout Error</strong>
                           {paymentError}
                         </div>
                       </div>
@@ -981,16 +939,16 @@ Expected Delivery/Collection Time: ${expectedTime}
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                           </svg>
-                          <span>Launching Secure Yoco...</span>
+                          <span>Connecting to PayFast...</span>
                         </>
                       ) : submittingInvoice ? (
                         <span>Scheduling Oven Queue...</span>
                       ) : paymentMethod === "cod" ? (
                         <span>SEND &amp; CONFIRM VIA WHATSAPP</span>
                       ) : hasNormalOrders && hasSmallOrders ? (
-                        <span>PAY BOTH WITH YOCO</span>
+                        <span>PAY BOTH WITH PAYFAST</span>
                       ) : (
-                        <span>PAY WITH YOCO &amp; ORDER</span>
+                        <span>PAY WITH PAYFAST &amp; ORDER</span>
                       )}
                     </button>
                   </div>
