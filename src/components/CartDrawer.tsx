@@ -271,19 +271,53 @@ Expected Delivery/Collection Time: ${expectedTime}
       let redirectTimeout: any = null;
 
       try {
-        // Send data directly to the server side checkout endpoint to initialize securely
-        const response = await fetch("/api/checkout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
+        // Automatically determine if the app should use the pure client-side checkout or server-side API.
+        // It should use client-side if hosted on GitHub Pages (static), or if explicitly specified by setting.
+        const isLocalOrPreview = window.location.hostname === "localhost" || 
+                                 window.location.hostname === "127.0.0.1" || 
+                                 window.location.hostname.endsWith(".run.app");
+        const isStaticHost = !isLocalOrPreview || import.meta.env.VITE_FORCE_CLIENT_CHECKOUT === "true";
+
+        const customApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || "";
+
+        let orderId = "";
+        let trackingNumber = "";
+        let payfastUrl = "";
+        let payfastFields: Record<string, string> = {};
+
+        if (isStaticHost && !customApiUrl) {
+          // --- PURE FRONTEND CHECKOUT FLOW (for GitHub Pages / static hosting) ---
+          console.log("Static hosting detected - performing direct frontend checkout...");
+          
+          trackingNumber = generateTrackingNumber();
+          const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
+
+          const productsDescription = cartItems.map(
+            item => `${item.menuItem.name}${item.selectedFlavor ? ` (${item.selectedFlavor})` : ""}${item.selectedSize ? ` (${item.selectedSize} Bucket)` : ""} x${item.quantity}`
+          ).join(", ");
+
+          const finalPaymentMode = paymentMethod === "cod" ? "split_cod_eft" : "card_payfast";
+
+          // Save the order to Firestore directly from the user's browser client
+          const path = "orders";
+          const orderData = {
             customerName: customerName.trim(),
-            customerPhone: customerPhone.trim(),
+            phoneNumber: customerPhone.trim(),
             email: email.trim(),
             companyName: companyName.trim(),
+            product: productsDescription.substring(0, 2000),
+            quantity: totalQuantity,
+            totalPrice: orderCalculations.total,
+            vatAmount: 0,
+            status: "Pending",
+            orderDate: serverTimestamp(),
             deliveryMethod,
-            address: address.trim(),
+            deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
+            paymentMethod: finalPaymentMode,
+            paymentStatus: "PENDING_PAYMENT",
+            orderNumber: trackingNumber,
+            trackingNumber: trackingNumber,
+            paymentDetails: null,
             cartItems: cartItems.map(item => ({
               menuItem: {
                 name: item.menuItem.name,
@@ -295,24 +329,101 @@ Expected Delivery/Collection Time: ${expectedTime}
               quantity: item.quantity,
               unitPrice: item.unitPrice
             })),
-            orderCalculations: {
-              subtotal: orderCalculations.subtotal,
-              deliveryFee: orderCalculations.deliveryFee,
-              discount: orderCalculations.discount,
-              processingFee: orderCalculations.processingFee,
-              total: orderCalculations.total
+            orderCalculations,
+            createdAt: new Date().toISOString()
+          };
+
+          const docRef = await addDoc(collection(db, path), orderData);
+          orderId = docRef.id;
+
+          // Build PayFast integration parameters on the client
+          const payfastMerchantId = import.meta.env.VITE_PAYFAST_MERCHANT_ID || "10000100";
+          const payfastMerchantKey = import.meta.env.VITE_PAYFAST_MERCHANT_KEY || "46ca4f5e0141e";
+          
+          const origin = window.location.origin;
+          const returnUrl = `${origin}?payment=success&orderId=${orderId}&trackingCode=${trackingNumber}`;
+          const cancelUrl = origin;
+          
+          // Optionally allow pointing webhook notifications to a custom production backend/functions if configured
+          const notifyUrl = import.meta.env.VITE_WEBHOOK_URL || `${origin}/api/payfast-itn`;
+
+          payfastFields = {
+            merchant_id: payfastMerchantId,
+            merchant_key: payfastMerchantKey,
+            return_url: returnUrl,
+            cancel_url: cancelUrl,
+            notify_url: notifyUrl,
+            m_payment_id: orderId,
+            amount: orderCalculations.total.toFixed(2),
+            item_name: `Bakery Order #${trackingNumber} (${totalQuantity} items)`,
+            name_first: customerName.trim(),
+            cell_number: customerPhone.trim()
+          };
+
+          const params = new URLSearchParams();
+          Object.entries(payfastFields).forEach(([k, v]) => {
+            params.append(k, v);
+          });
+
+          payfastUrl = `https://www.payfast.co.za/eng/process?${params.toString()}`;
+
+        } else {
+          // --- SERVER SIDE API ROUTES CHECKOUT ---
+          let endpointUrl = "/api/checkout";
+          if (customApiUrl) {
+            if (customApiUrl.includes("/checkout") || customApiUrl.includes("/api/")) {
+              endpointUrl = customApiUrl;
+            } else {
+              endpointUrl = `${customApiUrl.replace(/\/$/, "")}/api/checkout`;
+            }
+          }
+          console.log(`Executing server side checkout via endpoint: ${endpointUrl}`);
+
+          const response = await fetch(endpointUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
             },
-            paymentMethod: "card_payfast"
-          })
-        });
+            body: JSON.stringify({
+              customerName: customerName.trim(),
+              customerPhone: customerPhone.trim(),
+              email: email.trim(),
+              companyName: companyName.trim(),
+              deliveryMethod,
+              address: address.trim(),
+              cartItems: cartItems.map(item => ({
+                menuItem: {
+                  name: item.menuItem.name,
+                  id: item.menuItem.id,
+                  basePrice: item.menuItem.basePrice
+                },
+                selectedFlavor: item.selectedFlavor || null,
+                selectedSize: item.selectedSize || null,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice
+              })),
+              orderCalculations: {
+                subtotal: orderCalculations.subtotal,
+                deliveryFee: orderCalculations.deliveryFee,
+                discount: orderCalculations.discount,
+                processingFee: orderCalculations.processingFee,
+                total: orderCalculations.total
+              },
+              paymentMethod: "card_payfast"
+            })
+          });
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || "Failed to initialize secure checkout session");
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || "Failed to initialize secure checkout session");
+          }
+
+          const checkoutData = await response.json();
+          orderId = checkoutData.orderId;
+          trackingNumber = checkoutData.trackingNumber;
+          payfastUrl = checkoutData.payfastUrl;
+          payfastFields = checkoutData.payfastFields;
         }
-
-        const checkoutData = await response.json();
-        const { orderId, trackingNumber, payfastUrl, payfastFields } = checkoutData;
 
         // Breakout redirection flow using both window breakout and programmatic form POST with custom target
         let redirected = false;
@@ -328,13 +439,13 @@ Expected Delivery/Collection Time: ${expectedTime}
           console.warn("Iframe breakout via top.location was restricted by browser sandboxing. Trying alternative methods.", topErr);
         }
 
-        // Plan B: Programmatic form POST breakout using target="_top" or target="_blank"
+        // Plan B: Programmatic form POST breakout using target="_blank"
         if (!redirected) {
           try {
             const form = document.createElement("form");
             form.action = "https://www.payfast.co.za/eng/process";
             form.method = "POST";
-            form.target = (window.top && window.top !== window.self) ? "_blank" : "_top";
+            form.target = "_blank"; // Set target to "_blank" to ensure it opens in a new tab for maximum reliability
 
             const addField = (name: string, value: string) => {
               const input = document.createElement("input");
