@@ -18,9 +18,57 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
+// PayFast IP validation utility functions
+function ipToInt(ip: string): number {
+  return ip.split(".").reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+}
+
+function ipInCidr(ip: string, cidr: string): boolean {
+  if (!ip || !cidr) return false;
+  // Normalize IPv6-mapped IPv4 addresses (e.g., ::ffff:192.168.1.1)
+  if (ip.startsWith("::ffff:")) {
+    ip = ip.substring(7);
+  }
+  const [range, bitsStr] = cidr.split("/");
+  const bits = bitsStr ? parseInt(bitsStr, 10) : 32;
+
+  const ipNum = ipToInt(ip);
+  const rangeNum = ipToInt(range);
+
+  const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
+  return (ipNum & mask) === (rangeNum & mask);
+}
+
+function isPayFastIp(clientIp: string): boolean {
+  if (!clientIp) return false;
+
+  let ip = clientIp;
+  if (ip.startsWith("::ffff:")) {
+    ip = ip.substring(7);
+  }
+
+  // Permissive in local, loopback, or non-production modes for easier webhook simulation/testing
+  if (ip === "127.0.0.1" || ip === "::1" || process.env.NODE_ENV !== "production") {
+    return true;
+  }
+
+  const payfastCidrs = [
+    "197.97.145.144/28",
+    "41.74.179.192/27",
+    "102.216.36.0/28",
+    "102.216.36.128/28",
+    "144.126.193.139/32"
+  ];
+
+  return payfastCidrs.some(cidr => ipInCidr(ip, cidr));
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Trust first proxy to resolve client IP in Cloud Run container behind GC Load Balancer
+  app.set("trust proxy", true);
 
   // Middleware to support JSON payloads and URL encoded payloads (needed for PayFast ITN form posts)
   app.use(express.json());
@@ -132,6 +180,22 @@ async function startServer() {
   // Dedicated Webhook Endpoint: Receive Instant Transaction Notification (ITN) from PayFast
   app.post("/api/payfast-itn", async (req, res) => {
     try {
+      // 1. Determine client IP taking proxies into account (essential for Cloud Run with LB SSL termination)
+      let clientIp = req.ip || "";
+      const forwardedFor = req.headers["x-forwarded-for"];
+      if (forwardedFor) {
+        const parts = (typeof forwardedFor === "string" ? forwardedFor : forwardedFor[0]).split(",");
+        clientIp = parts[0].trim();
+      }
+
+      console.log(`PayFast ITN request received from IP: ${clientIp}`);
+
+      // 2. Validate client IP to ensure it matches PayFast's official blocks
+      if (!isPayFastIp(clientIp)) {
+        console.warn(`PayFast ITN request rejected: unauthorized IP address ${clientIp}`);
+        return res.status(403).send("Forbidden: Request IP address is not authorized by PayFast secure ranges.");
+      }
+
       console.log("PayFast ITN callback payload received:", req.body);
       const { m_payment_id, payment_status, pf_payment_id, amount_gross } = req.body;
 
