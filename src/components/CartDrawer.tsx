@@ -358,7 +358,7 @@ Expected Delivery/Collection Time: ${expectedTime}
         const form = document.createElement("form");
         form.action = "https://www.payfast.co.za/eng/process";
         form.method = "POST";
-        form.target = "_self";
+        form.target = "_top";
 
         const addField = (name: string, value: string) => {
           const input = document.createElement("input");
