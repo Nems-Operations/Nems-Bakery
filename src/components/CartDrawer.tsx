@@ -351,48 +351,102 @@ Expected Delivery/Collection Time: ${expectedTime}
       setIsPaymentLoading(true);
       setPaymentError(null);
 
+      let redirectTimeout: any = null;
+
       try {
         const trackingNumber = generateTrackingNumber();
         const orderId = await submitOrder(trackingNumber);
 
-        const form = document.createElement("form");
-        form.action = "https://www.payfast.co.za/eng/process";
-        form.method = "POST";
-        form.target = "_top";
-
-        const addField = (name: string, value: string) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = name;
-          input.value = value;
-          form.appendChild(input);
-        };
-
+        // Prep PayFast configurations
         const payfastMerchantId = import.meta.env.VITE_PAYFAST_MERCHANT_ID || "10000100";
         const payfastMerchantKey = import.meta.env.VITE_PAYFAST_MERCHANT_KEY || "46ca4f5e0141e";
-        addField("merchant_id", payfastMerchantId);
-        addField("merchant_key", payfastMerchantKey);
-        
         const returnUrl = `${window.location.origin}?payment=success&orderId=${orderId}&trackingCode=${trackingNumber}`;
-        addField("return_url", returnUrl);
-        addField("cancel_url", window.location.href);
-        addField("notify_url", window.location.origin);
-        
-        addField("m_payment_id", orderId);
-        addField("amount", orderCalculations.total.toFixed(2));
-        
         const totalQuantity = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
-        addField("item_name", `Bakery Order #${trackingNumber} (${totalQuantity} items)`);
-        
-        addField("name_first", customerName.trim());
-        addField("cell_number", customerPhone.trim());
 
-        document.body.appendChild(form);
-        form.submit();
+        // Build redirect URL query parameters for GET method redirection as standard secure fallbacks
+        const params = new URLSearchParams();
+        params.append("merchant_id", payfastMerchantId);
+        params.append("merchant_key", payfastMerchantKey);
+        params.append("return_url", returnUrl);
+        params.append("cancel_url", window.location.href);
+        params.append("notify_url", window.location.origin);
+        params.append("m_payment_id", orderId);
+        params.append("amount", orderCalculations.total.toFixed(2));
+        params.append("item_name", `Bakery Order #${trackingNumber} (${totalQuantity} items)`);
+        params.append("name_first", customerName.trim());
+        params.append("cell_number", customerPhone.trim());
+
+        const payfastUrl = `https://www.payfast.co.za/eng/process?${params.toString()}`;
+
+        // Breakout redirection flow using both window breakout and programmatic form POST with custom target
+        let redirected = false;
+
+        // Plan A: Top-level breakout redirect
+        try {
+          if (window.top && window.top !== window.self) {
+            console.log("Iframe detected - breaking out to PayFast via top window location");
+            window.top.location.href = payfastUrl;
+            redirected = true;
+          }
+        } catch (topErr) {
+          console.warn("Iframe breakout via top.location was restricted by browser sandboxing. Trying alternative methods.", topErr);
+        }
+
+        // Plan B: Programmatic form POST breakout using target="_top" or target="_blank"
+        if (!redirected) {
+          try {
+            const form = document.createElement("form");
+            form.action = "https://www.payfast.co.za/eng/process";
+            form.method = "POST";
+            // If inside an iframe, use _blank to break out of security sandboxes
+            form.target = (window.top && window.top !== window.self) ? "_blank" : "_top";
+
+            const addField = (name: string, value: string) => {
+              const input = document.createElement("input");
+              input.type = "hidden";
+              input.name = name;
+              input.value = value;
+              form.appendChild(input);
+            };
+
+            addField("merchant_id", payfastMerchantId);
+            addField("merchant_key", payfastMerchantKey);
+            addField("return_url", returnUrl);
+            addField("cancel_url", window.location.href);
+            addField("notify_url", window.location.origin);
+            addField("m_payment_id", orderId);
+            addField("amount", orderCalculations.total.toFixed(2));
+            addField("item_name", `Bakery Order #${trackingNumber} (${totalQuantity} items)`);
+            addField("name_first", customerName.trim());
+            addField("cell_number", customerPhone.trim());
+
+            document.body.appendChild(form);
+            form.submit();
+            redirected = true;
+            console.log("PayFast programmatic form post submitted successfully");
+          } catch (formErr) {
+            console.error("Form submission failed, trying direct window.open fallback:", formErr);
+          }
+        }
+
+        // Plan C: Ultimate fallback window.open / window.location.href
+        if (!redirected) {
+          console.log("Redirecting utilizing window.open or standard location fallback");
+          window.open(payfastUrl, "_blank") || (window.location.href = payfastUrl);
+        }
+
+        // Configure a fail-safe timeout so that the loading spinner resets 
+        // to a friendly state instead of hanging forever if redirect is delayed/blocked
+        redirectTimeout = setTimeout(() => {
+          setIsPaymentLoading(false);
+          setSubmittingInvoice(false);
+        }, 5000);
+
       } catch (error: any) {
         console.error("PayFast checkout failure:", error);
         setPaymentError(error.message || "Unable to queue order or open secure PayFast portal. Please try again.");
         setIsPaymentLoading(false);
+        setSubmittingInvoice(false);
       }
     }
   };
