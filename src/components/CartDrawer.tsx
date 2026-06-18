@@ -5,6 +5,8 @@
 
 import { useState, useMemo, FormEvent, useEffect } from "react";
 import { CartItem } from "../types";
+import { db } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
 import { X, Trash2, ShoppingBag, Truck, CheckCircle, Clock, Copy, MessageSquare } from "lucide-react";
 
 interface CartDrawerProps {
@@ -18,71 +20,69 @@ interface CartDrawerProps {
 }
 
 const getEmailClient = async (): Promise<any> => {
-  if (typeof window !== "undefined" && (window as any).Email) {
-    return (window as any).Email;
-  }
-
   // Create a local direct mock SMTPJS client as a bulletproof fallback
   const localClient = {
     send: async (options: any) => {
-      console.log("Local native SMTPJS client dispatching email...", options);
-      const payload = {
-        ...options,
-        Action: "Send",
-        nocache: Math.floor(1e6 * Math.random() + 1),
-      };
-      const response = await fetch("https://control.smtpjs.com/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: JSON.stringify(payload)
-      });
-      if (!response.ok) {
-        throw new Error(`Local SMTPJS dispatch response failed: ${response.status}`);
+      console.log("Local smart client dispatching email...", options);
+      
+      // Try local server-side same-origin proxy FIRST (secured by Nodemailer on backend)
+      try {
+        console.log("Attempting same-origin backend secure nodemailer proxy...");
+        const response = await fetch("/api/send-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            to: options.To,
+            subject: options.Subject,
+            body: options.Body,
+            cc: options.Cc
+          })
+        });
+        if (response.ok) {
+          const resData = await response.json();
+          console.log("Proxy dispatch completed successfully via backend Nodemailer:", resData);
+          return "OK";
+        }
+        console.warn(`Local proxy returned status ${response.status}. Trying SMTPJS direct fallback...`);
+      } catch (proxyErr) {
+        console.warn("Local proxy fetch failed, falling back to direct SMTPJS control API:", proxyErr);
       }
-      return response.text();
+
+      // Fallback: SMTPJS direct POST endpoint via application/x-www-form-urlencoded
+      try {
+        const payload = {
+          ...options,
+          Action: "Send",
+          nocache: Math.floor(1e6 * Math.random() + 1),
+        };
+        
+        // Properly URL encode parameters to respect application/x-www-form-urlencoded
+        const formData = new URLSearchParams();
+        Object.entries(payload).forEach(([k, v]) => {
+          formData.append(k, String(v));
+        });
+
+        const response = await fetch("https://control.smtpjs.com/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: formData.toString()
+        });
+        if (!response.ok) {
+          throw new Error(`SMTPJS direct gateway status: ${response.status}`);
+        }
+        return response.text();
+      } catch (directErr) {
+        console.error("Direct SMTPJS gateway failed:", directErr);
+        throw directErr;
+      }
     }
   };
 
-  // Attempt to load the external script if it doesn't exist yet, but resolve with local fallback if it fails or times out
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") {
-      resolve(localClient);
-      return;
-    }
-
-    const existingScript = document.querySelector('script[src*="smtpjs.com"]');
-    if (!existingScript) {
-      const script = document.createElement("script");
-      script.src = "https://smtpjs.com/v3/smtp.js";
-      script.async = true;
-      script.onload = () => {
-        if ((window as any).Email) {
-          resolve((window as any).Email);
-        } else {
-          resolve(localClient);
-        }
-      };
-      script.onerror = () => {
-        resolve(localClient);
-      };
-      document.head.appendChild(script);
-    } else {
-      let attempts = 0;
-      const interval = setInterval(() => {
-        attempts++;
-        if ((window as any).Email) {
-          clearInterval(interval);
-          resolve((window as any).Email);
-        } else if (attempts > 15) { // Check for 1.5 seconds max
-          clearInterval(interval);
-          console.warn("SMTPJS script took too long to load. Falling back to local direct fetch mail client.");
-          resolve(localClient);
-        }
-      }, 100);
-    }
-  });
+  return localClient;
 };
 
 export default function CartDrawer({
@@ -395,6 +395,38 @@ Expected Delivery/Collection Time: ${expectedTime}
         }
         if (safeCell) {
           payfastFields["cell_number"] = safeCell;
+        }
+
+        // Step A: Silently write the order copy to Firebase Firestore using a try/catch block
+        try {
+          console.log("Saving order payload to Firestore collection 'orders' silently...");
+          await addDoc(collection(db, "orders"), {
+            trackingNumber: trackingNumber,
+            customerName: safeName,
+            phoneNumber: safeCell,
+            email: cleanEmail || null,
+            companyName: companyName.trim(),
+            midrandWorkplace: companyName.trim() || "None Selected",
+            deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
+            cartItems: cartItems.map(item => ({
+              productName: item.menuItem.name,
+              quantity: item.quantity,
+              price: item.unitPrice,
+              selectedFlavor: item.selectedFlavor || null,
+              selectedSize: item.selectedSize || null
+            })),
+            totalPrice: orderCalculations.total,
+            orderDate: new Date(), // A timestamp field: new Date()
+            product: productsDescription.substring(0, 2000),
+            quantity: totalQuantity,
+            status: "Pending",
+            deliveryMethod: deliveryMethod,
+            paymentStatus: "PENDING_PAYMENT",
+            createdAt: new Date().toISOString()
+          });
+          console.log("Order saved to Firestore successfully.");
+        } catch (firebaseErr) {
+          console.error("Firebase Firestore write failed silently as per requirements:", firebaseErr);
         }
 
         // 1. Prepare HTML/text message for email dispatch

@@ -177,6 +177,44 @@ async function startServer() {
     }
   });
 
+  // Proxy endpoint to send emails without CORS / loading issues from the sandboxed iframe client
+  app.post("/api/send-email", async (req, res) => {
+    try {
+      const { to, subject, body, cc } = req.body;
+      if (!to || !subject || !body) {
+        return res.status(400).json({ error: "Missing required parameters (to, subject, body)" });
+      }
+
+      const GMAIL_PASS = process.env.GMAIL_APP_PASSWORD || "oiinzuasuecfjkgo";
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: "orders.nemsbakery@gmail.com",
+          pass: GMAIL_PASS
+        }
+      });
+
+      const mailOptions: any = {
+        from: '"Nems Bakery" <orders.nemsbakery@gmail.com>',
+        to: to,
+        subject: subject,
+        html: body
+      };
+
+      if (cc) {
+        mailOptions.cc = cc;
+      }
+
+      console.log(`[API send-email] Direct dispatch to ${to} requested...`);
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[API send-email] Successfully sent! MessageId: ${info.messageId}`);
+      return res.json({ success: true, messageId: info.messageId });
+    } catch (err: any) {
+      console.error("[API send-email] Error occurred during Nodemailer dispatch:", err);
+      return res.status(500).json({ error: err.message || "Email process failed" });
+    }
+  });
+
   // Dedicated Webhook Endpoint: Receive Instant Transaction Notification (ITN) from PayFast
   app.post("/api/payfast-itn", async (req, res) => {
     try {

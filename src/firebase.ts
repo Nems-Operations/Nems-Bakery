@@ -8,13 +8,13 @@ import { getFirestore, doc, getDocFromServer } from "firebase/firestore";
 
 // Active Firebase project credentials provided by the user
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCMHkWjf1ovQgW51jd3xBpknypnruHA2U0",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "nems-bakery.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "nems-bakery",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "nems-bakery.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "86006922843",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:86006922843:web:1d859b0878a49631e5097e",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-46VV931D02"
 };
 
 // Initialize Firebase
