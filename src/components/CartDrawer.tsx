@@ -17,6 +17,74 @@ interface CartDrawerProps {
   onClearCart: () => void;
 }
 
+const getEmailClient = async (): Promise<any> => {
+  if (typeof window !== "undefined" && (window as any).Email) {
+    return (window as any).Email;
+  }
+
+  // Create a local direct mock SMTPJS client as a bulletproof fallback
+  const localClient = {
+    send: async (options: any) => {
+      console.log("Local native SMTPJS client dispatching email...", options);
+      const payload = {
+        ...options,
+        Action: "Send",
+        nocache: Math.floor(1e6 * Math.random() + 1),
+      };
+      const response = await fetch("https://control.smtpjs.com/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        throw new Error(`Local SMTPJS dispatch response failed: ${response.status}`);
+      }
+      return response.text();
+    }
+  };
+
+  // Attempt to load the external script if it doesn't exist yet, but resolve with local fallback if it fails or times out
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(localClient);
+      return;
+    }
+
+    const existingScript = document.querySelector('script[src*="smtpjs.com"]');
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://smtpjs.com/v3/smtp.js";
+      script.async = true;
+      script.onload = () => {
+        if ((window as any).Email) {
+          resolve((window as any).Email);
+        } else {
+          resolve(localClient);
+        }
+      };
+      script.onerror = () => {
+        resolve(localClient);
+      };
+      document.head.appendChild(script);
+    } else {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if ((window as any).Email) {
+          clearInterval(interval);
+          resolve((window as any).Email);
+        } else if (attempts > 15) { // Check for 1.5 seconds max
+          clearInterval(interval);
+          console.warn("SMTPJS script took too long to load. Falling back to local direct fetch mail client.");
+          resolve(localClient);
+        }
+      }, 100);
+    }
+  });
+};
+
 export default function CartDrawer({
   isOpen,
   onClose,
@@ -458,72 +526,65 @@ Expected Delivery/Collection Time: ${expectedTime}
           </div>
         `;
 
-        // 2. Setup Direct SmtpJS API configuration hitting control.smtpjs.com/send
-        const emailPayload: any = {
-          nocache: Math.floor(1e6 * Math.random() + 1),
-          Action: "Send",
-          Host: "smtp.gmail.com",
-          Username: "orders.nemsbakery@gmail.com",
-          Password: "oiinzuasuecfjkgo",
-          From: "orders.nemsbakery@gmail.com",
-          Subject: `New Bakery Order #${trackingNumber} - ${safeName} (${companyName.trim()})`,
-          Body: emailContentHTML,
-          To: cleanEmail && cleanEmail !== "orders.nemsbakery@gmail.com"
-            ? `${cleanEmail}, orders.nemsbakery@gmail.com`
-            : "orders.nemsbakery@gmail.com"
-        };
-
-        if (cleanEmail && cleanEmail !== "orders.nemsbakery@gmail.com") {
-          emailPayload.Cc = "orders.nemsbakery@gmail.com";
-        }
-
-        console.log("Dispatching direct email confirmation via native fetch to SmtpJS API...", emailPayload);
-
+        // 2. Wrap the SMTPJS Email.send call in a try...catch...finally block to guarantee PayFast redirect
         try {
-          const response = await fetch("https://control.smtpjs.com/send", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: JSON.stringify(emailPayload)
-          });
-          const responseText = await response.text();
-          console.log("Email dispatch successfully concluded with response:", responseText);
+          console.log("Resolving and initializing SMTPJS library safely...");
+          const Email = await getEmailClient();
+
+          const emailOptions: any = {
+            Host: "smtp.gmail.com",
+            Username: "orders.nemsbakery@gmail.com",
+            Password: "oiinzuasuecfjkgo",
+            From: "orders.nemsbakery@gmail.com",
+            To: cleanEmail && cleanEmail !== "orders.nemsbakery@gmail.com" ? cleanEmail : "orders.nemsbakery@gmail.com",
+            Subject: `New Bakery Order #${trackingNumber} - ${safeName} (${companyName.trim()})`,
+            Body: emailContentHTML
+          };
+
+          if (cleanEmail && cleanEmail !== "orders.nemsbakery@gmail.com") {
+            emailOptions.Cc = "orders.nemsbakery@gmail.com";
+          }
+
+          console.log("Dispatching direct receipt email with SMTPJS standard Email.send...");
+          const response = await Email.send(emailOptions);
+          console.log("Email dispatch successfully concluded with SMTPJS response:", response);
         } catch (emailErr) {
-          console.error("Failed to send order email:", emailErr);
+          console.error("Fallback path caught order email dispatch exception:", emailErr);
+        } finally {
+          // --- GUARANTEED PAYFAST REDIRECT ---
+          console.log("Proceeding to final payment phase: building PayFast payload secure form...");
+          console.log("Dynamically building HTML form for Production PayFast post redirect:", payfastFields);
+
+          // Create HTML Form element programmatically as requested
+          const form = document.createElement("form");
+          form.action = "https://www.payfast.co.za/eng/process";
+          form.method = "POST";
+          // Set target attribute to '_top' or '_blank' to ensure safe breakout from iframe sandbox
+          form.target = (window.top && window.top !== window.self) ? "_blank" : "_top";
+
+          const addField = (name: string, value: string) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+          };
+
+          Object.entries(payfastFields).forEach(([key, value]) => {
+            addField(key, value);
+          });
+
+          document.body.appendChild(form);
+          form.submit();
+          
+          console.log("Direct client form submit triggers redirection successfully");
+
+          // Fail-safe cleanup
+          redirectTimeout = setTimeout(() => {
+            setIsPaymentLoading(false);
+            setSubmittingInvoice(false);
+          }, 5000);
         }
-
-        console.log("Dynamically building HTML form for Production PayFast post redirect:", payfastFields);
-
-        // Create HTML Form element programmatically as requested
-        const form = document.createElement("form");
-        form.action = "https://www.payfast.co.za/eng/process";
-        form.method = "POST";
-        // Set target attribute to '_top' or '_blank' to ensure safe breakout from iframe sandbox
-        form.target = (window.top && window.top !== window.self) ? "_blank" : "_top";
-
-        const addField = (name: string, value: string) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = name;
-          input.value = value;
-          form.appendChild(input);
-        };
-
-        Object.entries(payfastFields).forEach(([key, value]) => {
-          addField(key, value);
-        });
-
-        document.body.appendChild(form);
-        form.submit();
-        
-        console.log("Direct client form submit triggers redirection successfully");
-
-        // Fail-safe cleanup
-        redirectTimeout = setTimeout(() => {
-          setIsPaymentLoading(false);
-          setSubmittingInvoice(false);
-        }, 5000);
 
       } catch (error: any) {
         console.error("PayFast checkout failure:", error);
