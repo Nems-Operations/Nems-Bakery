@@ -13,6 +13,7 @@ interface AdminPortalModalProps {
   onClose: () => void;
   siteSettings: any;
   onUpdateSettings: (newSettings: any) => void;
+  setIsAdminModalOpen: (isOpen: boolean) => void;
 }
 
 // Default options for flavors to toggle
@@ -65,10 +66,11 @@ export default function AdminPortalModal({
   isOpen,
   onClose,
   siteSettings,
-  onUpdateSettings
+  onUpdateSettings,
+  setIsAdminModalOpen
 }: AdminPortalModalProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
+  const [passcode, setPasscode] = useState("");
   const [passwordError, setPasswordError] = useState("");
   
   const [activeTab, setActiveTab] = useState<"inventory" | "flavors" | "contact" | "coupons">("inventory");
@@ -88,15 +90,22 @@ export default function AdminPortalModal({
     }
   }, [siteSettings, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setPasscode("");
+      setIsAuthenticated(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === "NemsAdmin2026") {
+    if (passcode === "NemsAdmin2026") {
       setIsAuthenticated(true);
       setPasswordError("");
     } else {
-      setPasswordInput("");
+      setPasscode("");
       setPasswordError("Invalid Administrative Code. Access Denied.");
     }
   };
@@ -207,7 +216,7 @@ export default function AdminPortalModal({
     setIsSaving(true);
     setSaveSuccess(false);
     try {
-      const docRef = doc(db, "site_settings", "v1");
+      const docRef = doc(db, "site_settings", "store_config");
       await updateDoc(docRef, {
         prices: localSettings.prices,
         inventory: localSettings.inventory,
@@ -241,7 +250,11 @@ export default function AdminPortalModal({
             </div>
           </div>
           <button 
-            onClick={onClose}
+            onClick={() => {
+              setIsAuthenticated(false);
+              setPasscode("");
+              setIsAdminModalOpen(false);
+            }}
             className="text-stone-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
           >
             <X className="h-5 w-5" />
@@ -263,8 +276,8 @@ export default function AdminPortalModal({
               <input
                 type="password"
                 placeholder="Passcode..."
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
                 className="w-full border border-stone-200 focus:outline-none focus:border-gold px-4 py-3 rounded-lg text-center text-sm tracking-widest font-mono text-stone-950 bg-stone-50"
                 autoFocus
               />

@@ -158,24 +158,15 @@ export default function DailyTreats({
     "retail-macaron-single": "Strawberry Cream",
   });
 
+  const isFlavorActive = (itemId: string, flavorName: string) => {
+    return true;
+  };
+
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [orderPlacedFeedback, setOrderPlacedFeedback] = useState(false);
   const [addedFeedbackMessage, setAddedFeedbackMessage] = useState("");
 
-  const dynamicTreats = useMemo(() => {
-    return SMALL_TREATS_ITEMS.map((item) => {
-      const pricesOverride = siteSettings?.prices?.[item.id];
-      let updatedItem = { ...item };
-      if (pricesOverride) {
-        if (typeof pricesOverride === "number") {
-          updatedItem.basePrice = pricesOverride;
-        } else if (typeof pricesOverride === "object" && pricesOverride !== null && pricesOverride.base !== undefined) {
-          updatedItem.basePrice = pricesOverride.base;
-        }
-      }
-      return updatedItem;
-    });
-  }, [siteSettings]);
+  const dynamicTreats = SMALL_TREATS_ITEMS;
 
   const getQtyInCart = (itemId: string) => {
     const flavor = selectedItemFlavors[itemId] || "Original";
@@ -189,7 +180,7 @@ export default function DailyTreats({
     const item = dynamicTreats.find((it) => it.id === itemId);
     if (!item) return;
 
-    const dynamicStock = siteSettings?.inventory?.[itemId] ?? 50;
+    const dynamicStock = 50;
     if (dynamicStock <= 0 && delta > 0) {
       return;
     }
@@ -529,7 +520,7 @@ export default function DailyTreats({
               const currentFlavor = selectedItemFlavors[item.id];
               const possibleFlavors = RETAIL_FLAVORS_OPTIONS[item.id] || [];
 
-              const dynamicStock = siteSettings?.inventory?.[item.id] ?? 50;
+              const dynamicStock = 50;
               const isOutOfStock = dynamicStock <= 0;
 
               return (
@@ -587,9 +578,14 @@ export default function DailyTreats({
                           {item.name}
                         </h3>
                         {!item.isComingSoon && (
-                          <span className="text-base font-bold text-[#D4AF37] shrink-0 ml-2 font-mono">
-                            R {item.basePrice.toFixed(2)}
-                          </span>
+                          <div className="text-right shrink-0 ml-2">
+                            <span className="text-base font-bold text-[#D4AF37] block font-mono">
+                              R {item.basePrice.toFixed(2)}
+                            </span>
+                            <span className="text-[9.5px] text-stone-500 font-medium block mt-1">
+                              {dynamicStock} remaining for today
+                            </span>
+                          </div>
                         )}
                       </div>
                       <p className="text-[11px] text-stone-500 leading-relaxed line-clamp-2">
@@ -615,11 +611,19 @@ export default function DailyTreats({
                               onChange={(e) => handleFlavorChange(item.id, e.target.value)}
                               className="w-full text-[11px] border border-stone-200 bg-white rounded px-2 py-1 focus:outline-none focus:border-gold py-1.5 font-medium text-stone-800"
                             >
-                              {possibleFlavors.map((flv) => (
-                                <option key={flv} value={flv}>
-                                  ✨ {flv}
-                                </option>
-                              ))}
+                              {possibleFlavors.map((flv) => {
+                                const isActive = isFlavorActive(item.id, flv);
+                                return (
+                                  <option 
+                                    key={flv} 
+                                    value={flv}
+                                    disabled={!isActive}
+                                    style={{ opacity: isActive ? 1 : 0.4 }}
+                                  >
+                                    ✨ {flv}{!isActive ? " (Unavailable)" : ""}
+                                  </option>
+                                );
+                              })}
                             </select>
                           </div>
                         )}

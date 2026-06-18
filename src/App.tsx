@@ -16,9 +16,64 @@ import Footer from "./components/Footer";
 import { MenuItem, BucketSize, CartItem } from "./types";
 import { MENU_ITEMS } from "./data";
 import { Info, Sparkles, AlertCircle, ShoppingBag, X } from "lucide-react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import AdminPortalModal from "./components/AdminPortalModal";
+
+const DEFAULT_SETTINGS = {
+  prices: {
+    "gourmet-scones": { "2L": 140, "5L": 350, "10L": 700, "20L": 1300 },
+    "artisanal-muffins": { "2L": 140, "5L": 350, "10L": 700, "20L": 1300 },
+    "buttermilk-rusks": { "2L": 145, "5L": 360, "10L": 720, "20L": 1340 },
+    "gourmet-macarons": { "2L": 270, "5L": 660, "10L": 1320, "20L": 2400 },
+    "royal-biscuits": { "2L": 150, "5L": 375, "10L": 750, "20L": 1400 },
+    "heritage-koeksisters": { "2L": 125, "5L": 310, "10L": 620, "20L": 1150 },
+    "retail-scone": 30,
+    "retail-rusk-classic": 25,
+    "retail-rusk-seed": 30,
+    "retail-biscuit-cherry": 10,
+    "retail-biscuit-chocolate": 12,
+    "retail-macaron-single": 18
+  },
+  inventory: {
+    "gourmet-scones": 50,
+    "artisanal-muffins": 35,
+    "buttermilk-rusks": 40,
+    "gourmet-macarons": 25,
+    "royal-biscuits": 30,
+    "heritage-koeksisters": 45,
+    "retail-scone": 100,
+    "retail-rusk-classic": 75,
+    "retail-rusk-seed": 65,
+    "retail-biscuit-cherry": 80,
+    "retail-biscuit-chocolate": 85,
+    "retail-macaron-single": 45
+  },
+  flavors: [
+    { id: "flv-auth-scone", name: "Traditional Rich Cream Scone", category: "Scones", isActive: true },
+    { id: "flv-raisin-scone", name: "Sweet Sun-Dried Raisin Scone", category: "Scones", isActive: true },
+    { id: "flv-cheese-scone", name: "Savory Farm Cheddar Scone", category: "Scones", isActive: true },
+    { id: "flv-choc-scone", name: "Sweet Double Choc Chip Scone", category: "Scones", isActive: false },
+    
+    { id: "flv-blue-muffin", name: "Blueberry Crumble Muffin", category: "Muffins", isActive: true },
+    { id: "flv-choc-muffin", name: "Double Belgian Choc Muffin", category: "Muffins", isActive: true },
+    { id: "flv-bran-muffin", name: "Harvest Bran Muffin", category: "Muffins", isActive: true },
+    { id: "flv-lemon-muffin", name: "Lemon Poppy Seed Muffin", category: "Muffins", isActive: false },
+    
+    { id: "flv-butter-rusk", name: "Buttermilk Farm Rusk", category: "Rusks", isActive: true },
+    { id: "flv-aniseed-rusk", name: "Spiced Sweet Aniseed Rusk", category: "Rusks", isActive: true },
+    { id: "flv-crunch-rusk", name: "Wholewheat Crunchy Rusk", category: "Rusks", isActive: true }
+  ],
+  coupons: [
+    { id: "cpn-nems20", code: "NEMS20", discount: 20, expiresAt: "2026-12-31", isActive: true },
+    { id: "cpn-special", code: "SPECIAL15", discount: 15, expiresAt: "2026-08-31", isActive: true }
+  ],
+  contact: {
+    email: "orders@nemsbakery.co.za",
+    cellphone: "+27 82 555 4321",
+    address: "Building 4, Midrand Workplace, Gauteng, 1682"
+  }
+};
 
 export default function App() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -30,81 +85,25 @@ export default function App() {
   const [isDailyTreatsMode, setIsDailyTreatsMode] = useState(false);
   const [isAnnouncementVisible, setIsAnnouncementVisible] = useState(true);
 
-  const [siteSettings, setSiteSettings] = useState<any>(null);
+  const [siteSettings, setSiteSettings] = useState<any>(DEFAULT_SETTINGS);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  // Subscribe to site settings in real-time
+  // Load site settings statically once on component mount
   useEffect(() => {
-    const docRef = doc(db, "site_settings", "v1");
-    const unsubscribe = onSnapshot(docRef, async (snapDoc) => {
-      if (snapDoc.exists()) {
-        setSiteSettings(snapDoc.data());
-      } else {
-        const defaults = {
-          prices: {
-            "gourmet-scones": { "2L": 140, "5L": 350, "10L": 700, "20L": 1300 },
-            "artisanal-muffins": { "2L": 140, "5L": 350, "10L": 700, "20L": 1300 },
-            "buttermilk-rusks": { "2L": 145, "5L": 360, "10L": 720, "20L": 1340 },
-            "gourmet-macarons": { "2L": 270, "5L": 660, "10L": 1320, "20L": 2400 },
-            "royal-biscuits": { "2L": 150, "5L": 375, "10L": 750, "20L": 1400 },
-            "heritage-koeksisters": { "2L": 125, "5L": 310, "10L": 620, "20L": 1150 },
-            "retail-scone": 30,
-            "retail-rusk-classic": 25,
-            "retail-rusk-seed": 30,
-            "retail-biscuit-cherry": 10,
-            "retail-biscuit-chocolate": 12,
-            "retail-macaron-single": 18
-          },
-          inventory: {
-            "gourmet-scones": 50,
-            "artisanal-muffins": 35,
-            "buttermilk-rusks": 40,
-            "gourmet-macarons": 25,
-            "royal-biscuits": 30,
-            "heritage-koeksisters": 45,
-            "retail-scone": 100,
-            "retail-rusk-classic": 75,
-            "retail-rusk-seed": 65,
-            "retail-biscuit-cherry": 80,
-            "retail-biscuit-chocolate": 85,
-            "retail-macaron-single": 45
-          },
-          flavors: [
-            { id: "flv-auth-scone", name: "Traditional Rich Cream Scone", category: "Scones", isActive: true },
-            { id: "flv-raisin-scone", name: "Sweet Sun-Dried Raisin Scone", category: "Scones", isActive: true },
-            { id: "flv-cheese-scone", name: "Savory Farm Cheddar Scone", category: "Scones", isActive: true },
-            { id: "flv-choc-scone", name: "Sweet Double Choc Chip Scone", category: "Scones", isActive: false },
-            
-            { id: "flv-blue-muffin", name: "Blueberry Crumble Muffin", category: "Muffins", isActive: true },
-            { id: "flv-choc-muffin", name: "Double Belgian Choc Muffin", category: "Muffins", isActive: true },
-            { id: "flv-bran-muffin", name: "Harvest Bran Muffin", category: "Muffins", isActive: true },
-            { id: "flv-lemon-muffin", name: "Lemon Poppy Seed Muffin", category: "Muffins", isActive: false },
-            
-            { id: "flv-butter-rusk", name: "Buttermilk Farm Rusk", category: "Rusks", isActive: true },
-            { id: "flv-aniseed-rusk", name: "Spiced Sweet Aniseed Rusk", category: "Rusks", isActive: true },
-            { id: "flv-crunch-rusk", name: "Wholewheat Crunchy Rusk", category: "Rusks", isActive: true }
-          ],
-          coupons: [
-            { id: "cpn-nems20", code: "NEMS20", discount: 20, expiresAt: "2026-12-31", isActive: true },
-            { id: "cpn-special", code: "SPECIAL15", discount: 15, expiresAt: "2026-08-31", isActive: true }
-          ],
-          contact: {
-            email: "orders@nemsbakery.co.za",
-            cellphone: "+27 82 555 4321",
-            address: "Building 4, Midrand Workplace, Gauteng, 1682"
-          }
-        };
-        try {
-          await setDoc(docRef, defaults);
-        } catch (err) {
-          console.error("Failed to seed initial site settings:", err);
+    async function loadSettingsOnce() {
+      try {
+        const docRef = doc(db, "site_settings", "store_config");
+        const snapDoc = await getDoc(docRef);
+        if (snapDoc.exists()) {
+          setSiteSettings(snapDoc.data());
+        } else {
+          await setDoc(docRef, DEFAULT_SETTINGS);
         }
+      } catch (err) {
+        console.error("Failed to load static settings once:", err);
       }
-    }, (err) => {
-      console.error("Firestore settings subscriber failed:", err);
-    });
-
-    return () => unsubscribe();
+    }
+    loadSettingsOnce();
   }, []);
 
   // Auto-dismiss announcement bar after 9 seconds
@@ -437,6 +436,7 @@ export default function App() {
         onClose={() => setIsAdminModalOpen(false)}
         siteSettings={siteSettings}
         onUpdateSettings={(newSets) => setSiteSettings(newSets)}
+        setIsAdminModalOpen={setIsAdminModalOpen}
       />
 
       {/* Dynamic Checkout Toast Prompt */}

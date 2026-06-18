@@ -67,30 +67,10 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
   const [specialNotes, setSpecialNotes] = useState<Record<string, string>>({});
   const [addedItemFeedback, setAddedItemFeedback] = useState<Record<string, boolean>>({});
 
-  // Dynamic override for prices
-  const dynamicItems = useMemo(() => {
-    return MENU_ITEMS.map((item) => {
-      const pricesOverride = siteSettings?.prices?.[item.id];
-      let updatedItem = { ...item };
-      if (pricesOverride) {
-        if (typeof pricesOverride === "object" && pricesOverride !== null) {
-          if (item.isBucket || item.id === "gourmet-macarons") {
-            updatedItem.bucketPrices = { ...item.bucketPrices, ...pricesOverride };
-          } else {
-            updatedItem.basePrice = pricesOverride.base !== undefined ? pricesOverride.base : item.basePrice;
-          }
-        } else if (typeof pricesOverride === "number") {
-          updatedItem.basePrice = pricesOverride;
-        }
-      }
-      return updatedItem;
-    });
-  }, [siteSettings]);
-
-  // Get filtered items dynamically
+  // Get filtered items dynamically (restored to original hardcoded values)
   const filteredItems = useMemo(() => {
-    return dynamicItems.filter((item) => item.category === selectedCategory);
-  }, [dynamicItems, selectedCategory]);
+    return MENU_ITEMS.filter((item) => item.category === selectedCategory);
+  }, [selectedCategory]);
 
   const handleSizeChange = (itemId: string, size: BucketSize) => {
     setSizeSelection((prev) => ({ ...prev, [itemId]: size }));
@@ -110,8 +90,8 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
     const size = item.isBucket || item.id === "gourmet-macarons" ? sizeSelection[item.id] : undefined;
     const notes = specialNotes[item.id] || "";
     
-    // Resolve dynamic active flavors
-    const activeFlavors = siteSettings?.flavors?.[item.id] || BUCKET_FLAVOR_OPTIONS[item.id] || [];
+    // Resolve hardcoded flavor selections
+    const activeFlavors = BUCKET_FLAVOR_OPTIONS[item.id] || [];
     const flavor = activeFlavors.length > 0
       ? (flavorSelection[item.id] && activeFlavors.includes(flavorSelection[item.id]) 
           ? flavorSelection[item.id] 
@@ -193,8 +173,7 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
             
             const isMin10 = item.id === "snack-box";
             const currentQty = quantities[item.id] || (isMin10 ? 10 : 1);
-            const dynamicStock = siteSettings?.inventory?.[item.id] ?? 50;
-            const isOutOfStock = dynamicStock <= 0;
+            const isOutOfStock = false;
 
             return (
               <div 
@@ -321,32 +300,32 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
 
                          {/* Flavor selector for goods with different common flavors */}
                          {(() => {
-                           const activeFlavors = siteSettings?.flavors?.[item.id] || BUCKET_FLAVOR_OPTIONS[item.id] || [];
-                           if (activeFlavors.length <= 1) return null;
-                           
-                           const flavorSelectedValue = flavorSelection[item.id] && activeFlavors.includes(flavorSelection[item.id])
-                             ? flavorSelection[item.id]
-                             : activeFlavors[0] || "";
+                           const activeBackupList = BUCKET_FLAVOR_OPTIONS[item.id] || [];
+                            if (activeBackupList.length <= 1) return null;
+                            
+                            const flavorSelectedValue = flavorSelection[item.id] && activeBackupList.includes(flavorSelection[item.id])
+                              ? flavorSelection[item.id]
+                              : activeBackupList[0] || "";
 
-                           return (
-                             <div className="space-y-1.5 bg-amber-50/20 p-3.5 border border-gold/30 rounded-lg">
-                               <label className="text-[9px] font-extrabold text-stone-900 uppercase tracking-widest block font-sans">
-                                 Choose Baked Flavor
-                               </label>
-                               <select
-                                 value={flavorSelectedValue}
-                                 onChange={(e) => handleFlavorChange(item.id, e.target.value)}
-                                 className="w-full text-xs border border-stone-200 rounded px-2.5 py-2.5 bg-white text-stone-950 font-semibold focus:outline-none focus:border-gold cursor-pointer"
-                               >
-                                 {activeFlavors.map((flv: string) => (
-                                   <option key={flv} value={flv}>
-                                     ✨ {flv}
-                                   </option>
-                                 ))}
-                               </select>
-                             </div>
-                           );
-                         })()}
+                            return (
+                              <div className="space-y-1.5 bg-amber-50/20 p-3.5 border border-gold/30 rounded-lg">
+                                <label className="text-[9px] font-extrabold text-stone-900 uppercase tracking-widest block font-sans mb-1.5 font-sans">
+                                  Choose Baked Flavor
+                                </label>
+                                <select
+                                  value={flavorSelectedValue}
+                                  onChange={(e) => handleFlavorChange(item.id, e.target.value)}
+                                  className="w-full text-xs border border-stone-200 rounded px-2.5 py-2.5 bg-white text-stone-950 font-semibold focus:outline-none focus:border-gold cursor-pointer font-sans"
+                                >
+                                  {activeBackupList.map((flv: string) => (
+                                    <option key={flv} value={flv}>
+                                      ✨ {flv}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })()}
 
                         {/* Special note input */}
                         <div className="space-y-1.5">
