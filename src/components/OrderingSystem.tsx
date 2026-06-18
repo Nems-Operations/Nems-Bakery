@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Category, MenuItem, BucketSize } from "../types";
 import { MENU_ITEMS } from "../data";
 import { ShoppingBag, ChevronRight, Info, AlertCircle, Sparkles, Check } from "lucide-react";
@@ -16,6 +16,7 @@ interface OrderingSystemProps {
     specialInstructions?: string,
     selectedFlavor?: string
   ) => void;
+  siteSettings?: any;
 }
 
 const BUCKET_FLAVOR_OPTIONS: Record<string, string[]> = {
@@ -29,7 +30,7 @@ const BUCKET_FLAVOR_OPTIONS: Record<string, string[]> = {
   "snack-box": ["Standard Kid-Safe Sweet Mix"]
 };
 
-export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
+export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSystemProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category>(Category.BAKERY_BUCKETS);
   
   // Track selected configurations per item ID for rendering selectors
@@ -66,8 +67,30 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
   const [specialNotes, setSpecialNotes] = useState<Record<string, string>>({});
   const [addedItemFeedback, setAddedItemFeedback] = useState<Record<string, boolean>>({});
 
-  // Get filtered items
-  const filteredItems = MENU_ITEMS.filter((item) => item.category === selectedCategory);
+  // Dynamic override for prices
+  const dynamicItems = useMemo(() => {
+    return MENU_ITEMS.map((item) => {
+      const pricesOverride = siteSettings?.prices?.[item.id];
+      let updatedItem = { ...item };
+      if (pricesOverride) {
+        if (typeof pricesOverride === "object" && pricesOverride !== null) {
+          if (item.isBucket || item.id === "gourmet-macarons") {
+            updatedItem.bucketPrices = { ...item.bucketPrices, ...pricesOverride };
+          } else {
+            updatedItem.basePrice = pricesOverride.base !== undefined ? pricesOverride.base : item.basePrice;
+          }
+        } else if (typeof pricesOverride === "number") {
+          updatedItem.basePrice = pricesOverride;
+        }
+      }
+      return updatedItem;
+    });
+  }, [siteSettings]);
+
+  // Get filtered items dynamically
+  const filteredItems = useMemo(() => {
+    return dynamicItems.filter((item) => item.category === selectedCategory);
+  }, [dynamicItems, selectedCategory]);
 
   const handleSizeChange = (itemId: string, size: BucketSize) => {
     setSizeSelection((prev) => ({ ...prev, [itemId]: size }));
@@ -86,8 +109,13 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
     const qty = quantities[item.id] || 1;
     const size = item.isBucket || item.id === "gourmet-macarons" ? sizeSelection[item.id] : undefined;
     const notes = specialNotes[item.id] || "";
-    const flavor = BUCKET_FLAVOR_OPTIONS[item.id]
-      ? (flavorSelection[item.id] || BUCKET_FLAVOR_OPTIONS[item.id][0])
+    
+    // Resolve dynamic active flavors
+    const activeFlavors = siteSettings?.flavors?.[item.id] || BUCKET_FLAVOR_OPTIONS[item.id] || [];
+    const flavor = activeFlavors.length > 0
+      ? (flavorSelection[item.id] && activeFlavors.includes(flavorSelection[item.id]) 
+          ? flavorSelection[item.id] 
+          : activeFlavors[0])
       : undefined;
 
     onAddToBag(item, qty, size, notes, flavor);
@@ -165,11 +193,15 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
             
             const isMin10 = item.id === "snack-box";
             const currentQty = quantities[item.id] || (isMin10 ? 10 : 1);
+            const dynamicStock = siteSettings?.inventory?.[item.id] ?? 50;
+            const isOutOfStock = dynamicStock <= 0;
 
             return (
               <div 
                 key={item.id} 
-                className="group flex flex-col justify-between overflow-hidden bg-white border border-gold shadow-sm hover:shadow-md hover:translate-y-[-2px] transition-all duration-300 relative"
+                className={`group flex flex-col justify-between overflow-hidden bg-white border border-gold shadow-sm hover:shadow-md hover:translate-y-[-2px] transition-all duration-300 relative ${
+                  isOutOfStock ? "grayscale-[40%] opacity-80" : ""
+                }`}
               >
                 {/* Image & Badge Wrapper */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-stone-50 border-b border-gold">
@@ -179,6 +211,11 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
+                  {isOutOfStock && (
+                    <span className="absolute top-0 right-0 bg-red-600 text-white px-3 py-1.5 text-[8.5px] font-black uppercase tracking-[0.1em] border-l border-b border-gold z-20 shadow-sm">
+                      OUT OF STOCK
+                    </span>
+                  )}
                   {item.badge && !item.isComingSoon && (
                     <span className="absolute top-0 left-0 bg-black text-white px-3 py-1.5 text-[8px] font-extrabold uppercase tracking-[0.2em] border-r border-b border-gold">
                       {item.badge}
@@ -283,24 +320,33 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
                         )}
 
                          {/* Flavor selector for goods with different common flavors */}
-                         {BUCKET_FLAVOR_OPTIONS[item.id] && BUCKET_FLAVOR_OPTIONS[item.id].length > 1 && (
-                           <div className="space-y-1.5 bg-amber-50/20 p-3.5 border border-gold/30 rounded-lg">
-                             <label className="text-[9px] font-extrabold text-stone-900 uppercase tracking-widest block font-sans">
-                               Choose Baked Flavor
-                             </label>
-                             <select
-                               value={flavorSelection[item.id] || BUCKET_FLAVOR_OPTIONS[item.id][0]}
-                               onChange={(e) => handleFlavorChange(item.id, e.target.value)}
-                               className="w-full text-xs border border-stone-200 rounded px-2.5 py-2.5 bg-white text-stone-950 font-semibold focus:outline-none focus:border-gold cursor-pointer"
-                             >
-                               {BUCKET_FLAVOR_OPTIONS[item.id].map((flv) => (
-                                 <option key={flv} value={flv}>
-                                   ✨ {flv}
-                                 </option>
-                               ))}
-                             </select>
-                           </div>
-                         )}
+                         {(() => {
+                           const activeFlavors = siteSettings?.flavors?.[item.id] || BUCKET_FLAVOR_OPTIONS[item.id] || [];
+                           if (activeFlavors.length <= 1) return null;
+                           
+                           const flavorSelectedValue = flavorSelection[item.id] && activeFlavors.includes(flavorSelection[item.id])
+                             ? flavorSelection[item.id]
+                             : activeFlavors[0] || "";
+
+                           return (
+                             <div className="space-y-1.5 bg-amber-50/20 p-3.5 border border-gold/30 rounded-lg">
+                               <label className="text-[9px] font-extrabold text-stone-900 uppercase tracking-widest block font-sans">
+                                 Choose Baked Flavor
+                               </label>
+                               <select
+                                 value={flavorSelectedValue}
+                                 onChange={(e) => handleFlavorChange(item.id, e.target.value)}
+                                 className="w-full text-xs border border-stone-200 rounded px-2.5 py-2.5 bg-white text-stone-950 font-semibold focus:outline-none focus:border-gold cursor-pointer"
+                               >
+                                 {activeFlavors.map((flv: string) => (
+                                   <option key={flv} value={flv}>
+                                     ✨ {flv}
+                                   </option>
+                                 ))}
+                               </select>
+                             </div>
+                           );
+                         })()}
 
                         {/* Special note input */}
                         <div className="space-y-1.5">
@@ -347,9 +393,12 @@ export default function OrderingSystem({ onAddToBag }: OrderingSystemProps) {
 
                             {/* Submit to Bag Button */}
                             <button
+                              disabled={isOutOfStock}
                               onClick={() => executeAddToBag(item)}
                               className={`flex h-9 items-center justify-center px-4 text-xs font-extrabold uppercase tracking-widest transition-all ${
-                                addedItemFeedback[item.id]
+                                isOutOfStock
+                                  ? "bg-stone-200 text-stone-400 cursor-not-allowed border border-stone-300"
+                                  : addedItemFeedback[item.id]
                                   ? "bg-[#A6E3E9] text-stone-950 font-bold"
                                   : "bg-gold text-white hover:bg-black"
                               }`}

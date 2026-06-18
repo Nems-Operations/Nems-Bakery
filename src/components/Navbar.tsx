@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useState } from "react";
 import { ShoppingCart, Calendar, Cake, Coffee, HelpCircle, Utensils, Cookie } from "lucide-react";
 
 interface NavbarProps {
@@ -10,14 +11,38 @@ interface NavbarProps {
   onOpenCart: () => void;
   activeSection: string;
   setActiveSection: (section: string) => void;
+  onLogoTripleTap?: () => void;
 }
 
 export default function Navbar({
   cartCount,
   onOpenCart,
   activeSection,
-  setActiveSection
+  setActiveSection,
+  onLogoTripleTap
 }: NavbarProps) {
+  const [logoClicks, setLogoClicks] = useState(0);
+  const [lastClickTime, setLastClickTime] = useState(0);
+
+  const handleLogoClick = () => {
+    setActiveSection("hero");
+    const now = Date.now();
+    if (now - lastClickTime < 2000) {
+      const currentClicks = logoClicks + 1;
+      if (currentClicks === 3) {
+        setLogoClicks(0);
+        if (onLogoTripleTap) {
+          onLogoTripleTap();
+        }
+      } else {
+        setLogoClicks(currentClicks);
+      }
+    } else {
+      setLogoClicks(1);
+    }
+    setLastClickTime(now);
+  };
+
   const navLinks = [
     { id: "hero", label: "Home", icon: Cake },
     { id: "ordering", label: "Bakery Buckets & Shop", icon: Coffee },
@@ -32,7 +57,7 @@ export default function Navbar({
         
         {/* Brand Logo Wrapper */}
         <div 
-          onClick={() => setActiveSection("hero")}
+          onClick={handleLogoClick}
           className="flex cursor-pointer items-center space-x-3 group"
         >
           {/* Logo image reflecting the original branding */}

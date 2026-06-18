@@ -17,6 +17,7 @@ interface CartDrawerProps {
   onUpdateQty: (id: string, size: string | undefined, qty: number, flavor?: string) => void;
   onRemoveItem: (id: string, size: string | undefined, flavor?: string) => void;
   onClearCart: () => void;
+  siteSettings?: any;
 }
 
 const getEmailClient = async (): Promise<any> => {
@@ -92,7 +93,8 @@ export default function CartDrawer({
   cartItems,
   onUpdateQty,
   onRemoveItem,
-  onClearCart
+  onClearCart,
+  siteSettings
 }: CartDrawerProps) {
   const [deliveryMethod, setDeliveryMethod] = useState<"collect" | "delivery">("collect");
   const [customerName, setCustomerName] = useState("");
@@ -211,6 +213,38 @@ export default function CartDrawer({
     if (!uppercaseCode) {
       setCouponError("Please type or enter a coupon promo code");
       setCouponSuccess(null);
+      return;
+    }
+
+    // Try to find coupon in Firestore siteSettings coupons first
+    const foundCoupon = siteSettings?.coupons?.find(
+      (c: any) => c.code.trim().toUpperCase() === uppercaseCode
+    );
+
+    if (foundCoupon) {
+      if (!foundCoupon.isActive) {
+        setCouponError(`The coupon ${uppercaseCode} is no longer active.`);
+        setCouponSuccess(null);
+        return;
+      }
+      
+      if (foundCoupon.expiresAt) {
+        const expiryDate = new Date(foundCoupon.expiresAt);
+        const today = new Date();
+        if (expiryDate.getTime() < today.setHours(0,0,0,0)) {
+          setCouponError(`The coupon ${uppercaseCode} expired on ${foundCoupon.expiresAt}.`);
+          setCouponSuccess(null);
+          return;
+        }
+      }
+
+      setAppliedCoupon({
+        code: foundCoupon.code,
+        type: "percentage",
+        value: Number(foundCoupon.discount)
+      });
+      setCouponSuccess(`${foundCoupon.code} applied! Enjoy ${foundCoupon.discount}% discount on subtotals!`);
+      setCouponError(null);
       return;
     }
 

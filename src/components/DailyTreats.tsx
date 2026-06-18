@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MenuItem, Category, CartItem } from "../types";
 import { Coffee, Sparkles, ShoppingBag, Check, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
 
@@ -19,6 +19,7 @@ interface DailyTreatsProps {
   onUpdateQty: (id: string, size: string | undefined, qty: number, flavor?: string) => void;
   onRemoveItem: (id: string, size: string | undefined, flavor?: string) => void;
   onOpenCart: () => void;
+  siteSettings?: any;
 }
 
 // 1. Defining the premium retail/daily small treats
@@ -133,7 +134,8 @@ export default function DailyTreats({
   cartItems,
   onUpdateQty,
   onRemoveItem,
-  onOpenCart
+  onOpenCart,
+  siteSettings
 }: DailyTreatsProps) {
   // Active Tab for Muffins & Cupcakes sliding window
   const [activeTab, setActiveTab] = useState<"muffins" | "cupcakes">("muffins");
@@ -160,6 +162,21 @@ export default function DailyTreats({
   const [orderPlacedFeedback, setOrderPlacedFeedback] = useState(false);
   const [addedFeedbackMessage, setAddedFeedbackMessage] = useState("");
 
+  const dynamicTreats = useMemo(() => {
+    return SMALL_TREATS_ITEMS.map((item) => {
+      const pricesOverride = siteSettings?.prices?.[item.id];
+      let updatedItem = { ...item };
+      if (pricesOverride) {
+        if (typeof pricesOverride === "number") {
+          updatedItem.basePrice = pricesOverride;
+        } else if (typeof pricesOverride === "object" && pricesOverride !== null && pricesOverride.base !== undefined) {
+          updatedItem.basePrice = pricesOverride.base;
+        }
+      }
+      return updatedItem;
+    });
+  }, [siteSettings]);
+
   const getQtyInCart = (itemId: string) => {
     const flavor = selectedItemFlavors[itemId] || "Original";
     const found = cartItems.find(
@@ -169,8 +186,14 @@ export default function DailyTreats({
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
-    const item = SMALL_TREATS_ITEMS.find((it) => it.id === itemId);
+    const item = dynamicTreats.find((it) => it.id === itemId);
     if (!item) return;
+
+    const dynamicStock = siteSettings?.inventory?.[itemId] ?? 50;
+    if (dynamicStock <= 0 && delta > 0) {
+      return;
+    }
+
     const flavor = selectedItemFlavors[itemId] || "Original";
     const existing = cartItems.find(
       (ci) => ci.menuItem.id === itemId && ci.selectedFlavor === flavor
@@ -501,16 +524,21 @@ export default function DailyTreats({
           
           {/* Detailed Item Lists Grid (Standard Goods) */}
           <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {SMALL_TREATS_ITEMS.map((item) => {
+            {dynamicTreats.map((item) => {
               const qtySelected = getQtyInCart(item.id);
               const currentFlavor = selectedItemFlavors[item.id];
               const possibleFlavors = RETAIL_FLAVORS_OPTIONS[item.id] || [];
+
+              const dynamicStock = siteSettings?.inventory?.[item.id] ?? 50;
+              const isOutOfStock = dynamicStock <= 0;
 
               return (
                 <div 
                   key={item.id} 
                   id={item.id}
-                  className="scroll-mt-28 flex flex-col justify-between bg-white border border-gold hover:border-gold/80 transition-all duration-200 overflow-hidden shadow-xs relative rounded-xl"
+                  className={`scroll-mt-28 flex flex-col justify-between bg-white border border-gold hover:border-gold/80 transition-all duration-200 overflow-hidden shadow-xs relative rounded-xl ${
+                    isOutOfStock ? "grayscale-[40%] opacity-80" : ""
+                  }`}
                 >
                   {/* High Quality Image Setup */}
                   <div className="relative aspect-[16/10] overflow-hidden bg-stone-100 border-b border-gold/40">
@@ -520,6 +548,11 @@ export default function DailyTreats({
                       referrerPolicy="no-referrer"
                       className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
                     />
+                    {isOutOfStock && (
+                      <span className="absolute top-0 right-0 bg-red-600 text-white px-2.5 py-1 text-[8.5px] font-black uppercase tracking-[0.1em] z-20 shadow-sm">
+                        OUT OF STOCK
+                      </span>
+                    )}
                     {item.badge && !item.isComingSoon && (
                       <span className="absolute top-0 left-0 bg-[#D4AF37] text-white px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-widest">
                         {item.badge}
@@ -532,7 +565,7 @@ export default function DailyTreats({
                         Selected: {qtySelected}
                       </div>
                     )}
-
+...
                     {/* Coming Soon overlay with brand stamp */}
                     {item.isComingSoon && (
                       <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 z-10 select-none coming-soon-banner">
@@ -593,30 +626,38 @@ export default function DailyTreats({
 
                         {/* Quantity Selector Module with +- Buttons */}
                         <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-                          <span className="text-[9px] uppercase tracking-wider text-stone-400 font-bold">
-                            Adjust Quantity:
-                          </span>
-                          <div className="flex items-center border border-stone-200 bg-neutral-50 rounded-xs overflow-hidden h-9">
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
-                              aria-label="Decrease"
-                            >
-                              -
-                            </button>
-                            <span className="px-3.5 text-xs font-bold text-stone-950 font-mono w-8 text-center">
-                              {qtySelected}
+                          {isOutOfStock ? (
+                            <span className="text-[10px] uppercase font-black tracking-wider text-red-600 block py-1">
+                              Temporarily Out Of Stock
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
-                              aria-label="Increase"
-                            >
-                              +
-                            </button>
-                          </div>
+                          ) : (
+                            <>
+                              <span className="text-[9px] uppercase tracking-wider text-stone-400 font-bold">
+                                Adjust Quantity:
+                              </span>
+                              <div className="flex items-center border border-stone-200 bg-neutral-50 rounded-xs overflow-hidden h-9">
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, -1)}
+                                  className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
+                                  aria-label="Decrease"
+                                >
+                                  -
+                                </button>
+                                <span className="px-3.5 text-xs font-bold text-stone-950 font-mono w-8 text-center">
+                                  {qtySelected}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, 1)}
+                                  className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
+                                  aria-label="Increase"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </>
                     )}
