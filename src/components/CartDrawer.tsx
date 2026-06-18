@@ -332,104 +332,133 @@ Expected Delivery/Collection Time: ${expectedTime}
         // 1. Prepare HTML/text message for email dispatch
         const itemsHTML = cartItems.map(item => `
           <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1;">
-              <strong>${item.menuItem.name}</strong>
-              ${item.selectedFlavor ? `<br/><span style="font-size: 11px; color: #666;">Flavor: ${item.selectedFlavor}</span>` : ""}
-              ${item.selectedSize ? `<br/><span style="font-size: 11px; color: #666;">Size: ${item.selectedSize}</span>` : ""}
+            <td style="padding: 10px 8px; border-bottom: 1px solid #f0eeeb; font-size: 13px; color: #444; text-align: left;">
+              <strong style="color: #2c2520; font-size: 14px;">${item.menuItem.name}</strong>
+              ${item.selectedFlavor ? `<br/><span style="font-size: 11px; color: #7c6e64; font-style: italic;">Flavor: ${item.selectedFlavor}</span>` : ""}
+              ${item.selectedSize ? `<br/><span style="font-size: 11px; color: #7c6e64; font-style: italic;">Size: ${item.selectedSize}</span>` : ""}
             </td>
-            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1; text-align: center;">${item.quantity}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1; text-align: right;">R ${Number(item.unitPrice).toFixed(2)}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e1e1e1; text-align: right;">R ${Number(item.unitPrice * item.quantity).toFixed(2)}</td>
+            <td style="padding: 10px 8px; border-bottom: 1px solid #f0eeeb; text-align: center; font-size: 13px; color: #4a3e3d; font-family: monospace;">${item.quantity}</td>
+            <td style="padding: 10px 8px; border-bottom: 1px solid #f0eeeb; text-align: right; font-size: 13px; color: #4a3e3d; font-family: monospace;">R ${Number(item.unitPrice).toFixed(2)}</td>
+            <td style="padding: 10px 8px; border-bottom: 1px solid #f0eeeb; text-align: right; font-size: 13px; color: #2c2520; font-family: monospace; font-weight: bold;">R ${Number(item.unitPrice * item.quantity).toFixed(2)}</td>
           </tr>
         `).join("");
 
         const emailContentHTML = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e5e5; border-radius: 8px; padding: 20px; color: #333; background-color: #fcfcfc;">
-            <div style="text-align: center; border-bottom: 2px solid #C5A028; padding-bottom: 20px; margin-bottom: 20px;">
-              <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">Nems Bakery & Catering Co.</h1>
-              <p style="color: #C5A028; margin: 5px 0 0 0; font-size: 14px; font-weight: bold; letter-spacing: 1px;">ORDER CONFIRMATION</p>
-            </div>
-            
-            <div style="background-color: #f7f7f7; border-left: 4px solid #C5A028; padding: 15px; margin-bottom: 20px; border-radius: 0 4px 4px 0;">
-              <p style="margin: 0; font-size: 16px;"><strong>Order ID:</strong> <span style="font-family: monospace; font-weight: bold; color: #C5A028;">${orderId}</span></p>
-              <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">Status: Pending Payment (Redirected to Secure PayFast)</p>
-            </div>
+          <div style="background-color: #f7f5f0; padding: 30px 15px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+            <div style="max-width: 600px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background-color: #ffffff; border: 1px solid #eadecf;">
+              
+              <!-- Nems Brand Header -->
+              <div style="text-align: center; padding: 35px 20px 25px 20px; background-color: #faf8f5; border-bottom: 1px solid #eadecf; position: relative;">
+                <div style="width: 50px; height: 3px; background-color: #ECA1A6; display: inline-block; margin-right: 5px; border-radius: 2px;"></div>
+                <div style="width: 50px; height: 3px; background-color: #A6E3E9; display: inline-block; margin-left: 5px; border-radius: 2px;"></div>
+                <h1 style="color: #2c2520; margin: 10px 0 0 0; font-size: 26px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase;">Nems Bakery</h1>
+                <p style="color: #C5A028; margin: 5px 0 0 0; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">Premium High-Tea & Catering Receipt</p>
+              </div>
 
-            <h2 style="font-size: 16px; margin-bottom: 10px; color: #1a1a1a; border-bottom: 1px solid #eee; padding-bottom: 5px;">Customer Details</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
-              <tr>
-                <td style="padding: 4px 0; color: #666; width: 140px;">Customer Name:</td>
-                <td style="padding: 4px 0; font-weight: bold;">${safeName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 0; color: #666;">Mobile:</td>
-                <td style="padding: 4px 0; font-weight: bold;">${safeCell}</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 0; color: #666;">Email Address:</td>
-                <td style="padding: 4px 0;">${cleanEmail || "Not Provided"}</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 0; color: #666;">Workplace:</td>
-                <td style="padding: 4px 0;">${companyName.trim()}</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 0; color: #666;">Delivery Method:</td>
-                <td style="padding: 4px 0; font-weight: bold; text-transform: capitalize;">${deliveryMethod}</td>
-              </tr>
-              ${deliveryMethod === "delivery" ? `
-              <tr>
-                <td style="padding: 4px 0; color: #666;">Delivery Address:</td>
-                <td style="padding: 4px 0;">${address.trim()}</td>
-              </tr>` : ""}
-            </table>
+              <div style="padding: 25px 25px;">
+                
+                <!-- Order ID and Tracking Banner -->
+                <div style="background-color: #fffaf0; border-left: 4px solid #C5A028; padding: 15px; margin-bottom: 25px; border-radius: 4px;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      <td style="padding: 2px 0; font-size: 14px; color: #5a4f43;"><strong>Order ID:</strong></td>
+                      <td style="padding: 2px 0; font-size: 14px; font-family: monospace; font-weight: bold; color: #C5A028; text-align: right;">${orderId}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 2px 0; font-size: 14px; color: #5a4f43;"><strong>Tracking Number:</strong></td>
+                      <td style="padding: 2px 0; font-size: 14px; font-family: monospace; font-weight: bold; color: #C5A028; text-align: right;">${trackingNumber}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 6px 0 2px 0; font-size: 13px; color: #887a6b;" colspan="2">
+                        <strong>Status:</strong> Pending Payment (Redirected to Secure PayFast Checkout)
+                      </td>
+                    </tr>
+                  </table>
+                </div>
 
-            <h2 style="font-size: 16px; margin-bottom: 10px; color: #1a1a1a; border-bottom: 1px solid #eee; padding-bottom: 5px;">Order Summary</h2>
-            <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
-              <thead>
-                <tr style="background-color: #f4f4f4;">
-                  <th style="padding: 8px; text-align: left; border-bottom: 2px solid #ddd;">Item</th>
-                  <th style="padding: 8px; text-align: center; border-bottom: 2px solid #ddd; width: 50px;">Qty</th>
-                  <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd; width: 70px;">Unit</th>
-                  <th style="padding: 8px; text-align: right; border-bottom: 2px solid #ddd; width: 80px;">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsHTML}
-              </tbody>
-            </table>
+                <!-- Customer Details -->
+                <h2 style="font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: #2c2520; margin: 0 0 12px 0; border-bottom: 1px dashed #eadecf; padding-bottom: 6px;">Customer Details</h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 25px; line-height: 1.6;">
+                  <tr>
+                    <td style="padding: 4px 0; color: #7c6e64; width: 140px;">Customer Name:</td>
+                    <td style="padding: 4px 0; font-weight: bold; color: #2c2520;">${safeName}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #7c6e64;">Mobile Link:</td>
+                    <td style="padding: 4px 0; font-weight: bold; color: #2c2520;">${safeCell}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #7c6e64;">Email Address:</td>
+                    <td style="padding: 4px 0; color: #2c2520;">${cleanEmail || "Not Provided"}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #7c6e64;">Workplace Center:</td>
+                    <td style="padding: 4px 0; color: #2c2520;">${companyName.trim()}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 4px 0; color: #7c6e64;">Delivery Option:</td>
+                    <td style="padding: 4px 0; font-weight: bold; color: #C5A028; text-transform: capitalize;">${deliveryMethod}</td>
+                  </tr>
+                  ${deliveryMethod === "delivery" ? `
+                  <tr>
+                    <td style="padding: 4px 0; color: #7c6e64; vertical-align: top;">Delivery Address:</td>
+                    <td style="padding: 4px 0; color: #2c2520; line-height: 1.4;">${address.trim()}</td>
+                  </tr>` : ""}
+                </table>
 
-            <div style="margin-left: auto; width: 250px; font-size: 14px; border-top: 2px solid #C5A028; padding-top: 10px;">
-              <table style="width: 100%;">
-                <tr>
-                  <td style="padding: 2px 0; color: #666;">Subtotal:</td>
-                  <td style="padding: 2px 0; text-align: right; font-family: monospace;">R ${Number(orderCalculations.subtotal).toFixed(2)}</td>
-                </tr>
-                ${orderCalculations.deliveryFee > 0 ? `
-                <tr>
-                  <td style="padding: 2px 0; color: #666;">Delivery Fee:</td>
-                  <td style="padding: 2px 0; text-align: right; font-family: monospace;">R ${Number(orderCalculations.deliveryFee).toFixed(2)}</td>
-                </tr>` : ""}
-                ${orderCalculations.processingFee > 0 ? `
-                <tr>
-                  <td style="padding: 2px 0; color: #666;">Processing Fee:</td>
-                  <td style="padding: 2px 0; text-align: right; font-family: monospace;">R ${Number(orderCalculations.processingFee).toFixed(2)}</td>
-                </tr>` : ""}
-                <tr>
-                  <td style="padding: 6px 0; font-weight: bold; font-size: 16px;">Grand Total:</td>
-                  <td style="padding: 6px 0; text-align: right; font-weight: bold; font-size: 16px; color: #C5A028; font-family: monospace;">R ${Number(orderCalculations.total).toFixed(2)}</td>
-                </tr>
-              </table>
-            </div>
+                <!-- Order Summary Breakdown -->
+                <h2 style="font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: #2c2520; margin: 0 0 12px 0; border-bottom: 1px dashed #eadecf; padding-bottom: 6px;">Order Summary</h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 25px;">
+                  <thead>
+                    <tr style="background-color: #faf8f5;">
+                      <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #eadecf; color: #5a4f43; font-weight: bold;">Product Item</th>
+                      <th style="padding: 10px 8px; text-align: center; border-bottom: 2px solid #eadecf; color: #5a4f43; font-weight: bold; width: 50px;">Qty</th>
+                      <th style="padding: 10px 8px; text-align: right; border-bottom: 2px solid #eadecf; color: #5a4f43; font-weight: bold; width: 80px;">Unit Price</th>
+                      <th style="padding: 10px 8px; text-align: right; border-bottom: 2px solid #eadecf; color: #5a4f43; font-weight: bold; width: 90px;">Total Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${itemsHTML}
+                  </tbody>
+                </table>
 
-            <div style="text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; font-size: 11px; color: #999;">
-              <p style="margin: 0;">Thank you for ordering from Nems Bakery & Catering Co.!</p>
-              <p style="margin: 5px 0 0 0;">This invoice has been dispatched before PayFast processing.</p>
+                <!-- Totals Section -->
+                <div style="margin-left: auto; width: 280px; font-size: 13px; border-top: 2px solid #C5A028; padding-top: 12px; background-color: #fdfdfd; padding: 15px; border-radius: 6px; border: 1px solid #f0eeeb;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      <td style="padding: 4px 0; color: #7c6e64;">Subtotal:</td>
+                      <td style="padding: 4px 0; text-align: right; font-family: monospace; color: #2c2520;">R ${Number(orderCalculations.subtotal).toFixed(2)}</td>
+                    </tr>
+                    ${orderCalculations.deliveryFee > 0 ? `
+                    <tr>
+                      <td style="padding: 4px 0; color: #7c6e64;">Delivery Fee:</td>
+                      <td style="padding: 4px 0; text-align: right; font-family: monospace; color: #2c2520;">R ${Number(orderCalculations.deliveryFee).toFixed(2)}</td>
+                    </tr>` : ""}
+                    ${orderCalculations.processingFee > 0 ? `
+                    <tr>
+                      <td style="padding: 4px 0; color: #7c6e64;">Processing Fee:</td>
+                      <td style="padding: 4px 0; text-align: right; font-family: monospace; color: #2c2520;">R ${Number(orderCalculations.processingFee).toFixed(2)}</td>
+                    </tr>` : ""}
+                    <tr>
+                      <td style="padding: 8px 0 0 0; font-weight: bold; font-size: 15px; color: #2c2520; border-top: 1px solid #eadecf;">Grand Total:</td>
+                      <td style="padding: 8px 0 0 0; text-align: right; font-weight: bold; font-size: 15px; color: #C5A028; font-family: monospace;">R ${Number(orderCalculations.total).toFixed(2)}</td>
+                    </tr>
+                  </table>
+                </div>
+
+                <!-- Footer Accents -->
+                <div style="text-align: center; margin-top: 35px; border-top: 1px solid #eadecf; padding-top: 20px; font-size: 11px; color: #887a6b; line-height: 1.6;">
+                  <p style="margin: 0; font-weight: bold; color: #2c2520;">Thank you for supporting Nems Bakery & Catering Co.!</p>
+                  <p style="margin: 4px 0 0 0;">An active payment redirection form has initiated your checkout session.</p>
+                  <p style="margin: 12px 0 0 0; font-size: 10px; color: #bcaaa4; font-style: italic;">Powered by Secure PayFast Gateway &bull; South Africa</p>
+                </div>
+
+              </div>
             </div>
           </div>
         `;
 
-        // 2. Setup Direct Gmail/SMTP configuration
+        // 2. Setup Direct SmtpJS API configuration hitting control.smtpjs.com/send
         const emailPayload: any = {
           nocache: Math.floor(1e6 * Math.random() + 1),
           Action: "Send",
@@ -439,7 +468,9 @@ Expected Delivery/Collection Time: ${expectedTime}
           From: "orders.nemsbakery@gmail.com",
           Subject: `New Bakery Order #${trackingNumber} - ${safeName} (${companyName.trim()})`,
           Body: emailContentHTML,
-          To: cleanEmail || "orders.nemsbakery@gmail.com"
+          To: cleanEmail && cleanEmail !== "orders.nemsbakery@gmail.com"
+            ? `${cleanEmail}, orders.nemsbakery@gmail.com`
+            : "orders.nemsbakery@gmail.com"
         };
 
         if (cleanEmail && cleanEmail !== "orders.nemsbakery@gmail.com") {
@@ -449,7 +480,7 @@ Expected Delivery/Collection Time: ${expectedTime}
         console.log("Dispatching direct email confirmation via native fetch to SmtpJS API...", emailPayload);
 
         try {
-          const response = await fetch("https://smtpjs.com/v1/smtp.js", {
+          const response = await fetch("https://control.smtpjs.com/send", {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded"
