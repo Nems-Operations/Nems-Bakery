@@ -116,12 +116,16 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Synchronize state with URL parameters/hash for deep linking directly to daily treats or partnerships
+  // Synchronize state with URL parameters/hash/pathnames for deep linking directly to daily treats or partnerships
   useEffect(() => {
     const handleUrlChange = () => {
       const params = new URLSearchParams(window.location.search);
+      const pathname = window.location.pathname;
       const isTreats = params.get("page") === "daily-treats" || window.location.hash === "#daily-treats";
-      const isPartnership = params.get("page") === "partnership" || window.location.hash === "#partnership";
+      const isPartnership = params.get("page") === "partnership" || 
+                            window.location.hash === "#partnership" || 
+                            pathname === "/partners" || 
+                            pathname === "/partners/";
       
       setIsDailyTreatsMode(isTreats);
       setIsPartnershipMode(isPartnership);
@@ -149,20 +153,20 @@ export default function App() {
   const handleSetActiveSection = (section: string) => {
     setActiveSection(section);
     if (section === "daily-treats") {
-      const newUrl = window.location.origin + window.location.pathname + "?page=daily-treats";
+      const newUrl = window.location.origin + "/daily-treats";
       window.history.pushState({ path: newUrl }, "", newUrl);
       setIsDailyTreatsMode(true);
       setIsPartnershipMode(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (section === "partnership") {
-      const newUrl = window.location.origin + window.location.pathname + "?page=partnership";
+      const newUrl = window.location.origin + "/partners";
       window.history.pushState({ path: newUrl }, "", newUrl);
       setIsPartnershipMode(true);
       setIsDailyTreatsMode(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      if (isDailyTreatsMode || isPartnershipMode) {
-        const newUrl = window.location.origin + window.location.pathname;
+      if (isDailyTreatsMode || isPartnershipMode || window.location.pathname !== "/") {
+        const newUrl = window.location.origin + "/";
         window.history.pushState({ path: newUrl }, "", newUrl);
         setIsDailyTreatsMode(false);
         setIsPartnershipMode(false);
