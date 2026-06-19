@@ -5,7 +5,11 @@
 
 import { Phone, Mail, MapPin, Clock, ShieldCheck, Heart } from "lucide-react";
 
-export default function Footer() {
+interface FooterProps {
+  onPartnershipClick?: () => void;
+}
+
+export default function Footer({ onPartnershipClick }: FooterProps) {
   return (
     <footer className="bg-stone-950 text-stone-200 border-t border-[#D4AF37]/20 pt-16 pb-8 font-sans">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -91,6 +95,14 @@ export default function Footer() {
         {/* Bottom footer bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-500 font-medium">
           <p>© {new Date().getFullYear()} Nems Bakery and Catering Co. (Pty) Ltd. Johannesburg. All rights reserved.</p>
+          <div className="mt-4 sm:mt-0 flex items-center space-x-6">
+            <button 
+              onClick={onPartnershipClick}
+              className="text-stone-400 hover:text-[#D4AF37] transition-colors uppercase tracking-wider font-semibold cursor-pointer focus:outline-none"
+            >
+              Partnership
+            </button>
+          </div>
         </div>
 
       </div>

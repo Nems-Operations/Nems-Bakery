@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { ShoppingCart, Calendar, Cake, Coffee, HelpCircle, Utensils, Cookie } from "lucide-react";
+import { ShoppingCart, Calendar, Cake, Coffee, HelpCircle, Utensils, Cookie, Handshake } from "lucide-react";
 
 interface NavbarProps {
   cartCount: number;
@@ -49,6 +49,7 @@ export default function Navbar({
     { id: "daily-treats", label: "Small Orders", icon: Cookie },
     { id: "catering-builder", label: "Custom Catering Quote", icon: Utensils },
     { id: "event-gallery", label: "Event Showcase", icon: Calendar },
+    { id: "partnership", label: "Partnerships", icon: Handshake },
   ];
 
   return (

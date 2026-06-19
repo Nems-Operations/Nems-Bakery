@@ -19,6 +19,7 @@ import { Info, Sparkles, AlertCircle, ShoppingBag, X } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import AdminPortalModal from "./components/AdminPortalModal";
+import Partnership from "./components/Partnership";
 
 const DEFAULT_SETTINGS = {
   prices: {
@@ -83,6 +84,7 @@ export default function App() {
   const [toastTimer, setToastTimer] = useState<any>(null);
 
   const [isDailyTreatsMode, setIsDailyTreatsMode] = useState(false);
+  const [isPartnershipMode, setIsPartnershipMode] = useState(false);
   const [isAnnouncementVisible, setIsAnnouncementVisible] = useState(true);
 
   const [siteSettings, setSiteSettings] = useState<any>(DEFAULT_SETTINGS);
@@ -114,14 +116,21 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Synchronize state with URL parameters/hash for deep linking directly to daily treats
+  // Synchronize state with URL parameters/hash for deep linking directly to daily treats or partnerships
   useEffect(() => {
     const handleUrlChange = () => {
       const params = new URLSearchParams(window.location.search);
       const isTreats = params.get("page") === "daily-treats" || window.location.hash === "#daily-treats";
+      const isPartnership = params.get("page") === "partnership" || window.location.hash === "#partnership";
+      
       setIsDailyTreatsMode(isTreats);
+      setIsPartnershipMode(isPartnership);
+      
       if (isTreats) {
         setActiveSection("daily-treats");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (isPartnership) {
+        setActiveSection("partnership");
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     };
@@ -143,12 +152,20 @@ export default function App() {
       const newUrl = window.location.origin + window.location.pathname + "?page=daily-treats";
       window.history.pushState({ path: newUrl }, "", newUrl);
       setIsDailyTreatsMode(true);
+      setIsPartnershipMode(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (section === "partnership") {
+      const newUrl = window.location.origin + window.location.pathname + "?page=partnership";
+      window.history.pushState({ path: newUrl }, "", newUrl);
+      setIsPartnershipMode(true);
+      setIsDailyTreatsMode(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      if (isDailyTreatsMode) {
+      if (isDailyTreatsMode || isPartnershipMode) {
         const newUrl = window.location.origin + window.location.pathname;
         window.history.pushState({ path: newUrl }, "", newUrl);
         setIsDailyTreatsMode(false);
+        setIsPartnershipMode(false);
       }
       setTimeout(() => {
         const el = document.getElementById(section);
@@ -316,7 +333,9 @@ export default function App() {
 
       {/* Main Core View Modules */}
       <main>
-        {isDailyTreatsMode ? (
+        {isPartnershipMode ? (
+          <Partnership onBackToMenu={() => handleSetActiveSection("hero")} />
+        ) : isDailyTreatsMode ? (
           <>
             {/* Standalone Deep Link Welcoming Header */}
             <div id="treats-welcome-hero" className="bg-white border-b border-amber-100 py-12 px-4 text-center">
@@ -361,6 +380,7 @@ export default function App() {
               onStartOrder={handleStartOrder}
               onStartCustomQuote={handleStartCustomQuote}
               onStartDailyTreats={handleStartDailyTreats}
+              onStartPartnership={() => handleSetActiveSection("partnership")}
             />
 
             {/* Brand Promise Section */}
@@ -414,6 +434,32 @@ export default function App() {
             <EventGallery 
               onSelectEventTemplate={handleSelectEventTemplate}
             />
+
+            {/* 5. Grow Your Business With Nems Bakery Partnership Banner */}
+            <section className="bg-[#FDFAF5] py-16 px-4 border-t border-b border-amber-100">
+              <div className="max-w-4xl mx-auto text-center space-y-6">
+                <div className="inline-flex items-center space-x-1 border border-gold/40 bg-white/80 px-3.5 py-1 text-[10px] uppercase font-bold tracking-widest text-[#B49225] rounded-full">
+                  <span>Earn Extra Income</span>
+                </div>
+                
+                <h3 className="serif text-2xl sm:text-3xl font-extrabold text-stone-950 uppercase tracking-tight">
+                  Grow Your Business With Nems Bakery
+                </h3>
+                
+                <p className="text-sm sm:text-base text-stone-705 leading-relaxed max-w-2xl mx-auto">
+                  Looking to earn extra income? Join our Partnership Program! Whether you want to purchase bulk buckets to resell at a profit in your community, or manage commission-based fresh treats as a corporate distributor in your office park, we have a track built for your goals.
+                </p>
+                
+                <div className="pt-2">
+                  <button
+                    onClick={() => handleSetActiveSection("partnership")}
+                    className="inline-flex items-center justify-center bg-stone-950 text-white hover:bg-gold px-8 py-3.5 text-xs font-black uppercase tracking-widest transition-all duration-200 rounded-xl shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer"
+                  >
+                    Learn More &amp; Apply →
+                  </button>
+                </div>
+              </div>
+            </section>
           </>
         )}
       </main>
@@ -499,7 +545,7 @@ export default function App() {
       )}
 
       {/* Footer Area */}
-      <Footer />
+      <Footer onPartnershipClick={() => handleSetActiveSection("partnership")} />
 
     </div>
   );

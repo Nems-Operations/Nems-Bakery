@@ -11,6 +11,7 @@ interface HeroProps {
   onStartOrder: () => void;
   onStartCustomQuote: () => void;
   onStartDailyTreats: () => void;
+  onStartPartnership: () => void;
 }
 
 const HERO_SLIDES = [
@@ -40,7 +41,7 @@ const HERO_SLIDES = [
   }
 ];
 
-export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats }: HeroProps) {
+export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats, onStartPartnership }: HeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -124,6 +125,13 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
                 className="flex items-center justify-center space-x-2 bg-white px-6 py-4 text-xs font-bold uppercase tracking-widest text-gold border-2 border-gold hover:bg-neutral-50 hover:text-ink transition-colors cursor-pointer"
               >
                 <span>Custom Packages</span>
+              </button>
+
+              <button
+                onClick={onStartPartnership}
+                className="flex items-center justify-center space-x-2 bg-amber-50 px-6 py-4 text-xs font-bold uppercase tracking-widest text-[#9C7A1E] border-2 border-[#D4AF37]/40 hover:bg-gold hover:border-gold hover:text-white transition-colors cursor-pointer"
+              >
+                <span>Partnership</span>
               </button>
             </div>
           </div>
