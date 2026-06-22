@@ -82,6 +82,13 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string } | null>(null);
   const [toastTimer, setToastTimer] = useState<any>(null);
+  const [pendingPartyPack, setPendingPartyPack] = useState<{
+    item: MenuItem;
+    quantity: number;
+    selectedSize?: BucketSize;
+    specialInstructions?: string;
+    selectedFlavor?: string;
+  } | null>(null);
 
   // Initialize view states directly from URLs for zero-flicker routing
   const [isDailyTreatsMode, setIsDailyTreatsMode] = useState(() => {
@@ -269,6 +276,41 @@ export default function App() {
     specialInstructions?: string,
     selectedFlavor?: string
   ) => {
+    const isPartyPlan = item.id.startsWith("partyplan-");
+    const hasPartyPackInCart = cartItems.some(cItem => cItem.menuItem.id.startsWith("partyplan-"));
+    const hasRegularInCart = cartItems.some(cItem => !cItem.menuItem.id.startsWith("partyplan-"));
+
+    if (isPartyPlan) {
+      if (hasRegularInCart) {
+        // Prevent addition until they clear standard treats or complete checkout
+        setPendingPartyPack({
+          item,
+          quantity,
+          selectedSize,
+          specialInstructions,
+          selectedFlavor
+        });
+        return;
+      }
+    } else {
+      if (hasPartyPackInCart) {
+        // Prevent adding standard items to bag with party pack
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+        }
+        setToast({
+          visible: true,
+          message: "⚠️ Party Packs are handled via dedicated school/home delivery and cannot be combined with standard bakery orders."
+        });
+        const timer = setTimeout(() => {
+          setToast(null);
+        }, 8000);
+        setToastTimer(timer);
+        setIsCartOpen(true);
+        return;
+      }
+    }
+
     setCartItems((prevItems) => {
       // Find matches with same item ID AND same bucket size selection AND same flavor
       const existingIdx = prevItems.findIndex(
@@ -632,6 +674,95 @@ export default function App() {
             </div>
           </div>
         </>
+      )}
+
+      {pendingPartyPack && (
+        <div id="cart-conflict-modal" className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-stone-200 shadow-2xl p-6 space-y-6 animate-scale-up">
+            <div className="text-center space-y-2">
+              <span className="text-4xl">⚠️</span>
+              <h3 className="font-serif font-black text-stone-900 text-lg uppercase tracking-wider">Cart Mixing Restriction</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                You have standard bakery items in your bag. <strong className="text-stone-950 block mt-1">Party Packs are handled via dedicated school/home delivery and cannot be combined with standard bakery orders.</strong>
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  // Automatically clear out regular treats/buckets first as per rules
+                  setCartItems([]);
+                  
+                  // Now add the Kids Party Pack
+                  const item = pendingPartyPack.item;
+                  const quantity = pendingPartyPack.quantity;
+                  const selectedSize = pendingPartyPack.selectedSize;
+                  const specialInstructions = pendingPartyPack.specialInstructions;
+                  const selectedFlavor = pendingPartyPack.selectedFlavor;
+                  
+                  const price = selectedSize && item.bucketPrices 
+                    ? item.bucketPrices[selectedSize] 
+                    : item.basePrice;
+
+                  setCartItems([
+                    {
+                      id: item.id,
+                      menuItem: item,
+                      selectedSize,
+                      selectedFlavor,
+                      quantity,
+                      specialInstructions,
+                      unitPrice: price
+                    }
+                  ]);
+                  
+                  setPendingPartyPack(null);
+
+                  if (toastTimer) {
+                    clearTimeout(toastTimer);
+                  }
+                  
+                  setToast({
+                    visible: true,
+                    message: "🔔 Bag cleared of standard treats & Kids Party Plan loaded successfully!"
+                  });
+                  
+                  const timer = setTimeout(() => {
+                    setToast(null);
+                  }, 8000);
+                  setToastTimer(timer);
+
+                  setIsCartOpen(true);
+                }}
+                className="w-full py-3 bg-[#D4AF37] hover:bg-stone-900 hover:text-white text-stone-950 font-black uppercase tracking-wider text-[11px] rounded-xl transition-all shadow-md cursor-pointer text-center"
+              >
+                Clear Bakery &amp; Add Party Pack
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingPartyPack(null);
+                  setIsCartOpen(true); // Open the cart so they can complete checkout
+                }}
+                className="w-full py-3 bg-stone-950 hover:bg-stone-800 text-white font-black uppercase tracking-wider text-[11px] rounded-xl transition-all shadow-md cursor-pointer text-center"
+              >
+                Complete Current Checkout First
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingPartyPack(null);
+                }}
+                className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold uppercase tracking-wider text-[10px] rounded-xl transition-all cursor-pointer text-center"
+              >
+                Cancel Addition
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Footer Area */}

@@ -110,6 +110,18 @@ export default function CartDrawer({
   const [expectedDate, setExpectedDate] = useState("");
   const [expectedTime, setExpectedTime] = useState("");
 
+  // Kids Party Pack conditional states
+  const [childName, setChildName] = useState("");
+  const [selectedSchool, setSelectedSchool] = useState("");
+  const [classGrade, setClassGrade] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [homeAddress, setHomeAddress] = useState("");
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState("");
+
+  const hasKidsPartyPack = useMemo(() => {
+    return cartItems.some(item => item.menuItem.id.startsWith("partyplan-"));
+  }, [cartItems]);
+
   const generateTrackingNumber = (): string => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
@@ -160,7 +172,15 @@ export default function CartDrawer({
   const hasSmallOrders = smallTreatItems.length > 0;
   const hasNormalOrders = normalBakeItems.length > 0;
 
-  const deliveryFee = deliveryMethod === "delivery" ? 120 : 0;
+  const deliveryFee = useMemo(() => {
+    if (hasKidsPartyPack) {
+      if (selectedSchool === "Other / Home Delivery") {
+        return 120;
+      }
+      return 0; // Omit R120 fee for specific pre-configured schools
+    }
+    return deliveryMethod === "delivery" ? 120 : 0;
+  }, [hasKidsPartyPack, selectedSchool, deliveryMethod]);
 
   const smallSubtotal = useMemo(() => {
     return smallTreatItems.reduce((acc, curr) => acc + (curr.unitPrice * curr.quantity), 0);
@@ -295,11 +315,23 @@ export default function CartDrawer({
     if (!customerPhone.trim() || customerPhone.length < 9) {
       currentErrors.customerPhone = "Please supply a valid contact number";
     }
-    if (deliveryMethod === "delivery" && !address.trim()) {
-      currentErrors.address = "A delivery destination address is mandatory";
+
+    if (hasKidsPartyPack) {
+      if (!childName.trim()) currentErrors.childName = "Child's Full Name is required";
+      if (!selectedSchool) currentErrors.selectedSchool = "School selection is required";
+      if (!classGrade.trim()) currentErrors.classGrade = "Class/Grade is required";
+      if (!deliveryDate) currentErrors.deliveryDate = "Delivery Date is required";
+      if (selectedSchool === "Other / Home Delivery") {
+        if (!homeAddress.trim()) currentErrors.homeAddress = "Home Address is required for home delivery";
+        if (!deliveryTimeSlot) currentErrors.deliveryTimeSlot = "Delivery Time Slot is required";
+      }
+    } else {
+      if (deliveryMethod === "delivery" && !address.trim()) {
+        currentErrors.address = "A delivery destination address is mandatory";
+      }
     }
 
-    if (paymentMethod === "cod") {
+    if (paymentMethod === "cod" && !hasKidsPartyPack) {
       if (hasNormalOrders) {
         if (!expectedDate) {
           currentErrors.expectedDate = "Expected delivery/collection date is required";
@@ -328,10 +360,29 @@ export default function CartDrawer({
         return `${item.menuItem.name}${flavorStr}${sizeStr} x ${item.quantity} (R ${item.unitPrice.toFixed(2)} each)`;
       }).join("\n");
 
-      const deliverySelection = deliveryMethod === "collect" ? "Free Pickup" : "Courier";
+      const deliverySelection = hasKidsPartyPack 
+        ? (selectedSchool === "Other / Home Delivery" ? "Home Delivery" : `School Run: ${selectedSchool}`) 
+        : (deliveryMethod === "collect" ? "Free Pickup" : "Courier");
 
       let waMessage = "";
-      if (hasNormalOrders) {
+      if (hasKidsPartyPack) {
+        waMessage = `Hello Nems Bakery! I would like to place a Kids Party Pack order.
+
+Order Items:
+${itemsList}
+
+Total Balance: R${orderCalculations.total.toFixed(2)}
+Delivery Selection: ${deliverySelection}
+Child's Name: ${childName.trim()}
+School Selector: ${selectedSchool}
+Class/Grade Name: ${classGrade.trim()}
+Delivery Date: ${deliveryDate}
+${selectedSchool === "Other / Home Delivery" ? `Home Address: ${homeAddress.trim()}\nDelivery Time Slot: ${deliveryTimeSlot}\n` : ""}
+Customer Name: ${customerName.trim()}
+Phone Number: ${customerPhone.trim()}
+
+I understand that a 50% deposit is required before my order is processed and baked.`;
+      } else if (hasNormalOrders) {
         waMessage = `Hello Nems Bakery! I would like to place a Cash on Delivery order.
 
 Order Items:
@@ -397,14 +448,34 @@ Expected Delivery/Collection Time: ${expectedTime}
         const cleanItemName = `Bakery Order ${trackingNumber}`.replace(/[^a-zA-Z0-9\s-]/g, "");
 
         // Build item description with all details packed in clearly per guidelines
-        const cleanDescription = [
-          `Cust: ${safeName}`,
-          `Mobile: ${safeCell}`,
-          email.trim() ? `Email: ${email.trim()}` : "",
-          `Workplace: ${companyName.trim()}`,
-          `Delivery: ${deliveryMethod === "delivery" ? `to ${address.trim()}` : "Shop Pickup"}`,
-          `Items: ${productsDescription}`
-        ].filter(Boolean).join(" | ").substring(0, 255);
+        let cleanDescription = "";
+        let customDelivery = "";
+
+        if (hasKidsPartyPack) {
+          customDelivery = selectedSchool === "Other / Home Delivery" ? `Home: ${homeAddress.trim()}` : `School: ${selectedSchool}`;
+          cleanDescription = [
+            `Cust: ${safeName}`,
+            `Mobile: ${safeCell}`,
+            email.trim() ? `Email: ${email.trim()}` : "",
+            `Child: ${childName.trim()}`,
+            `School/Run: ${selectedSchool}`,
+            `Class/Grade: ${classGrade.trim()}`,
+            `Date: ${deliveryDate}`,
+            selectedSchool === "Other / Home Delivery" ? `Address: ${homeAddress.trim()}` : "",
+            selectedSchool === "Other / Home Delivery" ? `TimeSlot: ${deliveryTimeSlot}` : "",
+            `Items: ${productsDescription}`
+          ].filter(Boolean).join(" | ").substring(0, 255);
+        } else {
+          customDelivery = deliveryMethod === "delivery" ? `to ${address.trim()}` : "Shop Pickup";
+          cleanDescription = [
+            `Cust: ${safeName}`,
+            `Mobile: ${safeCell}`,
+            email.trim() ? `Email: ${email.trim()}` : "",
+            `Workplace: ${companyName.trim()}`,
+            `Delivery: ${customDelivery}`,
+            `Items: ${productsDescription}`
+          ].filter(Boolean).join(" | ").substring(0, 255);
+        }
 
         const payfastFields: Record<string, string> = {
           merchant_id: payfastMerchantId,
@@ -416,10 +487,10 @@ Expected Delivery/Collection Time: ${expectedTime}
           item_name: cleanItemName,
           item_description: cleanDescription,
           name_first: safeName,
-          custom_str1: companyName.trim().substring(0, 255), // Workplace selection / Dropdown
-          custom_str2: deliveryMethod === "delivery" ? `Delivery: ${address.trim()}`.substring(0, 255) : "Pickup",
-          custom_str3: productsDescription.substring(0, 255), // Itemized Details
-          custom_str4: `Phone: ${safeCell}`.substring(0, 255)
+          custom_str1: (hasKidsPartyPack ? selectedSchool : companyName.trim()).substring(0, 255),
+          custom_str2: (hasKidsPartyPack ? customDelivery : (deliveryMethod === "delivery" ? `Delivery: ${address.trim()}` : "Pickup")).substring(0, 255),
+          custom_str3: productsDescription.substring(0, 255),
+          custom_str4: `Phone: ${safeCell}${hasKidsPartyPack ? ` | Child: ${childName.trim()} | Class: ${classGrade.trim()} | Date: ${deliveryDate}` : ""}`.substring(0, 255)
         };
 
         // Add email_address if valid and present
@@ -439,24 +510,36 @@ Expected Delivery/Collection Time: ${expectedTime}
             customerName: safeName,
             phoneNumber: safeCell,
             email: cleanEmail || null,
-            companyName: companyName.trim(),
-            midrandWorkplace: companyName.trim() || "None Selected",
-            deliveryAddress: deliveryMethod === "delivery" ? address.trim() : "Shop Pickup",
+            companyName: hasKidsPartyPack ? "" : companyName.trim(),
+            midrandWorkplace: hasKidsPartyPack ? "" : companyName.trim() || "None Selected",
+            deliveryAddress: hasKidsPartyPack 
+              ? (selectedSchool === "Other / Home Delivery" ? homeAddress.trim() : `School Run: ${selectedSchool}`) 
+              : (deliveryMethod === "delivery" ? address.trim() : "Shop Pickup"),
             cartItems: cartItems.map(item => ({
               productName: item.menuItem.name,
               quantity: item.quantity,
               price: item.unitPrice,
               selectedFlavor: item.selectedFlavor || null,
-              selectedSize: item.selectedSize || null
+              selectedSize: item.selectedSize || null,
+              specialInstructions: item.specialInstructions || null
             })),
             totalPrice: orderCalculations.total,
             orderDate: new Date(), // A timestamp field: new Date()
             product: productsDescription.substring(0, 2000),
             quantity: totalQuantity,
             status: "Pending",
-            deliveryMethod: deliveryMethod,
+            deliveryMethod: hasKidsPartyPack 
+              ? (selectedSchool === "Other / Home Delivery" ? "home-delivery" : "school-pickup")
+              : deliveryMethod,
             paymentStatus: "PENDING_PAYMENT",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            isKidsPartyOrder: hasKidsPartyPack,
+            childName: hasKidsPartyPack ? childName.trim() : null,
+            schoolName: hasKidsPartyPack ? selectedSchool : null,
+            classGrade: hasKidsPartyPack ? classGrade.trim() : null,
+            deliveryDate: hasKidsPartyPack ? deliveryDate : null,
+            homeAddress: hasKidsPartyPack && selectedSchool === "Other / Home Delivery" ? homeAddress.trim() : null,
+            deliveryTimeSlot: hasKidsPartyPack && selectedSchool === "Other / Home Delivery" ? deliveryTimeSlot : null
           });
           console.log("Order saved to Firestore successfully.");
         } catch (firebaseErr) {
@@ -858,6 +941,14 @@ Expected Delivery/Collection Time: ${expectedTime}
               ) : (
                 // Unified Cart & Checkout View
                 <form onSubmit={handleCheckoutSubmit} className="space-y-6">
+                  {hasKidsPartyPack && (
+                    <div id="kids-party-isolation-banner" className="bg-amber-50 border border-[#D4AF37]/40 rounded-xl p-3 text-xs text-amber-900 flex items-start space-x-2.5 shadow-sm animate-fade-in">
+                      <span className="text-base text-[#C5A028] leading-none shrink-0 font-bold font-sans">🎈</span>
+                      <p className="font-semibold leading-relaxed text-[11px] text-stone-850">
+                        Party Packs are handled via dedicated school/home delivery and cannot be combined with standard bakery orders.
+                      </p>
+                    </div>
+                  )}
                   {/* Part 1: Bag Contents and Controllers */}
                   <div className="space-y-4">
                     {/* Small Daily Treats Section */}
@@ -1146,32 +1237,198 @@ Expected Delivery/Collection Time: ${expectedTime}
                     </span>
 
                     {/* Collection Mode Checkboxes */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setDeliveryMethod("collect")}
-                        className={`rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider border transition-all ${
-                          deliveryMethod === "collect"
-                            ? "bg-stone-950 text-white border-stone-950"
-                            : "bg-white text-stone-800 border-stone-200"
-                        }`}
-                      >
-                        Free Pickup
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeliveryMethod("delivery")}
-                        className={`rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider border transition-all ${
-                          deliveryMethod === "delivery"
-                            ? "bg-stone-950 text-white border-stone-950"
-                            : "bg-white text-stone-800 border-stone-200"
-                        }`}
-                      >
-                        Courier (+R120)
-                      </button>
-                    </div>
+                    {!hasKidsPartyPack && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryMethod("collect")}
+                          className={`rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider border transition-all ${
+                            deliveryMethod === "collect"
+                              ? "bg-stone-950 text-white border-stone-950"
+                              : "bg-white text-stone-800 border-stone-200"
+                          }`}
+                        >
+                          Free Pickup
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryMethod("delivery")}
+                          className={`rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider border transition-all ${
+                            deliveryMethod === "delivery"
+                              ? "bg-stone-950 text-white border-stone-950"
+                              : "bg-white text-stone-800 border-stone-200"
+                          }`}
+                        >
+                          Courier (+R120)
+                        </button>
+                      </div>
+                    )}
 
                     <div className="space-y-3 font-sans text-xs">
+                      {hasKidsPartyPack && (
+                        <div className="space-y-3 bg-[#fdfaf5] p-3.5 border border-[#D4AF37]/35 rounded-xl">
+                          <span className="text-[10px] font-black uppercase text-[#C5A028] tracking-widest block mb-2 flex items-center space-x-1.5">
+                            <span>🎈</span>
+                            <span>Kids Party Logistics Specs:</span>
+                          </span>
+
+                          {/* Child's Full Name */}
+                          <div>
+                            <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Child's Full Name *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Sipho Nkosi"
+                              value={childName}
+                              onChange={(e) => {
+                                setChildName(e.target.value);
+                                if (errors.childName) {
+                                  setErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next.childName;
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-stone-950 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                errors.childName ? "border-rose-500" : "border-stone-200"
+                              }`}
+                            />
+                            {errors.childName && <p className="text-[10px] text-rose-500 mt-0.5">{errors.childName}</p>}
+                          </div>
+
+                          {/* School Selector Dropdown */}
+                          <div>
+                            <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">School Selector Dropdown *</label>
+                            <select
+                              value={selectedSchool}
+                              onChange={(e) => {
+                                setSelectedSchool(e.target.value);
+                                if (errors.selectedSchool) {
+                                  setErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next.selectedSchool;
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-stone-950 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                errors.selectedSchool ? "border-rose-500" : "border-stone-200"
+                              }`}
+                            >
+                              <option value="">-- Choose school run --</option>
+                              <option value="Nova Pioneer Midrand Pre-Primary">Nova Pioneer Midrand Pre-Primary</option>
+                              <option value="Nova Pioneer Midrand Primary">Nova Pioneer Midrand Primary</option>
+                              <option value="Nova Pioneer Midrand High School">Nova Pioneer Midrand High School</option>
+                              <option value="Curro Midrand">Curro Midrand</option>
+                              <option value="Nova Pioneer Paulshof">Nova Pioneer Paulshof</option>
+                              <option value="Other / Home Delivery">Other / Home Delivery</option>
+                            </select>
+                            {errors.selectedSchool && <p className="text-[10px] text-rose-500 mt-0.5">{errors.selectedSchool}</p>}
+                          </div>
+
+                          {/* Class / Grade Name */}
+                          <div>
+                            <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Class / Grade Name *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Grade 1R"
+                              value={classGrade}
+                              onChange={(e) => {
+                                setClassGrade(e.target.value);
+                                if (errors.classGrade) {
+                                  setErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next.classGrade;
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-stone-950 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                errors.classGrade ? "border-rose-500" : "border-stone-200"
+                              }`}
+                            />
+                            {errors.classGrade && <p className="text-[10px] text-rose-500 mt-0.5">{errors.classGrade}</p>}
+                          </div>
+
+                          {/* Delivery Date Selector */}
+                          <div>
+                            <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Delivery Date Selector *</label>
+                            <input
+                              type="date"
+                              value={deliveryDate}
+                              onChange={(e) => {
+                                setDeliveryDate(e.target.value);
+                                if (errors.deliveryDate) {
+                                  setErrors(prev => {
+                                    const next = { ...prev };
+                                    delete next.deliveryDate;
+                                    return next;
+                                  });
+                                }
+                              }}
+                              className={`w-full rounded-lg border px-3 py-2 text-stone-950 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                errors.deliveryDate ? "border-rose-500" : "border-stone-200"
+                              }`}
+                            />
+                            {errors.deliveryDate && <p className="text-[10px] text-rose-500 mt-0.5">{errors.deliveryDate}</p>}
+                          </div>
+
+                          {/* Conditional Home Delivery Fields */}
+                          {selectedSchool === "Other / Home Delivery" && (
+                            <div className="pt-2.5 mt-2 border-t border-dashed border-stone-200 space-y-3">
+                              <div>
+                                <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Home Address *</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. 15 Whispering Pine Close, Midrand"
+                                  value={homeAddress}
+                                  onChange={(e) => {
+                                    setHomeAddress(e.target.value);
+                                    if (errors.homeAddress) {
+                                      setErrors(prev => {
+                                        const next = { ...prev };
+                                        delete next.homeAddress;
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                  className={`w-full rounded-lg border px-3 py-2 text-stone-950 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                    errors.homeAddress ? "border-rose-500" : "border-stone-200"
+                                  }`}
+                                />
+                                {errors.homeAddress && <p className="text-[10px] text-rose-500 mt-0.5">{errors.homeAddress}</p>}
+                              </div>
+
+                              <div>
+                                <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Delivery Time Slot *</label>
+                                <select
+                                  value={deliveryTimeSlot}
+                                  onChange={(e) => {
+                                    setDeliveryTimeSlot(e.target.value);
+                                    if (errors.deliveryTimeSlot) {
+                                      setErrors(prev => {
+                                        const next = { ...prev };
+                                        delete next.deliveryTimeSlot;
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                  className={`w-full rounded-lg border px-3 py-2 text-stone-950 focus:outline-none focus:border-[#D4AF37] bg-white text-xs ${
+                                    errors.deliveryTimeSlot ? "border-rose-500" : "border-stone-200"
+                                  }`}
+                                >
+                                  <option value="">-- Choose time slot --</option>
+                                  <option value="Morning Delivery (08:00 - 11:00)">Morning Delivery (08:00 - 11:00)</option>
+                                  <option value="Midday Delivery (11:00 - 14:00)">Midday Delivery (11:00 - 14:00)</option>
+                                  <option value="Afternoon Delivery (14:00 - 17:00)">Afternoon Delivery (14:00 - 17:00)</option>
+                                </select>
+                                {errors.deliveryTimeSlot && <p className="text-[10px] text-rose-500 mt-0.5">{errors.deliveryTimeSlot}</p>}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div>
                         <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Your Full Name *</label>
                         <input
@@ -1179,7 +1436,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                           placeholder="e.g. Lerato Khumalo"
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37] text-xs bg-white"
                         />
                         {errors.customerName && <p className="text-[10px] text-rose-500 mt-0.5">{errors.customerName}</p>}
                       </div>
@@ -1191,7 +1448,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                           placeholder="e.g. 072 123 4567"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
-                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37] text-xs bg-white"
                         />
                         {errors.customerPhone && <p className="text-[10px] text-rose-500 mt-0.5">{errors.customerPhone}</p>}
                       </div>
@@ -1203,14 +1460,14 @@ Expected Delivery/Collection Time: ${expectedTime}
                           placeholder="e.g. custom@domain.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37] text-xs bg-white"
                         />
                         <p className="text-[10px] text-stone-500 mt-0.5">
                           Enter your email to receive your 6-digit order confirmation number directly.
                         </p>
                       </div>
 
-                      {deliveryMethod === "delivery" && (
+                      {!hasKidsPartyPack && deliveryMethod === "delivery" && (
                         <>
                           <div>
                             <label className="text-[9px] uppercase font-bold text-stone-600 block mb-1">Company / Workplace Name (Optional)</label>
@@ -1220,7 +1477,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                               value={companyName}
                               onChange={(e) => setCompanyName(e.target.value)}
                               list="midrand-workplaces"
-                              className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                              className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37] text-xs bg-white"
                             />
                             <datalist id="midrand-workplaces">
                               <option value="RTIA (Road Traffic Infringement Agency)" />
@@ -1239,7 +1496,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                               placeholder="e.g. 834 9th avenue, Alexandra, Johannesburg"
                               value={address}
                               onChange={(e) => setAddress(e.target.value)}
-                              className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37]"
+                              className="w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 focus:outline-none focus:border-[#D4AF37] text-xs bg-white"
                             />
                             {errors.address && <p className="text-[10px] text-rose-500 mt-0.5">{errors.address}</p>}
                           </div>
@@ -1293,7 +1550,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                       </div>
                     )}
 
-                    {paymentMethod === "cod" && (
+                    {paymentMethod === "cod" && !hasKidsPartyPack && (
                       <div className="mb-4 space-y-3 p-3.5 bg-amber-50/20 border border-amber-100 rounded-xl">
                         {hasNormalOrders ? (
                           <div>
