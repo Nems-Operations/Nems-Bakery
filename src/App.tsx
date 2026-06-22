@@ -79,12 +79,43 @@ const DEFAULT_SETTINGS = {
 export default function App() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("hero");
   const [toast, setToast] = useState<{ visible: boolean; message: string } | null>(null);
   const [toastTimer, setToastTimer] = useState<any>(null);
 
-  const [isDailyTreatsMode, setIsDailyTreatsMode] = useState(false);
-  const [isPartnershipMode, setIsPartnershipMode] = useState(false);
+  // Initialize view states directly from URLs for zero-flicker routing
+  const [isDailyTreatsMode, setIsDailyTreatsMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    const pathname = window.location.pathname;
+    return params.get("page") === "daily-treats" || 
+           window.location.hash === "#daily-treats" ||
+           pathname === "/daily-treats" || 
+           pathname === "/daily-treats/";
+  });
+
+  const [isPartnershipMode, setIsPartnershipMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    const pathname = window.location.pathname;
+    return params.get("page") === "partnership" || 
+           window.location.hash === "#partnership" || 
+           pathname === "/partners" || 
+           pathname === "/partners/";
+  });
+
+  const [activeSection, setActiveSection] = useState(() => {
+    if (typeof window === "undefined") return "hero";
+    const pathname = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("page") === "partnership" || window.location.hash === "#partnership" || pathname === "/partners" || pathname === "/partners/") {
+      return "partnership";
+    }
+    if (params.get("page") === "daily-treats" || window.location.hash === "#daily-treats" || pathname === "/daily-treats" || pathname === "/daily-treats/") {
+      return "daily-treats";
+    }
+    return "hero";
+  });
+
   const [isAnnouncementVisible, setIsAnnouncementVisible] = useState(true);
 
   const [siteSettings, setSiteSettings] = useState<any>(DEFAULT_SETTINGS);
@@ -121,7 +152,10 @@ export default function App() {
     const handleUrlChange = () => {
       const params = new URLSearchParams(window.location.search);
       const pathname = window.location.pathname;
-      const isTreats = params.get("page") === "daily-treats" || window.location.hash === "#daily-treats";
+      const isTreats = params.get("page") === "daily-treats" || 
+                       window.location.hash === "#daily-treats" ||
+                       pathname === "/daily-treats" || 
+                       pathname === "/daily-treats/";
       const isPartnership = params.get("page") === "partnership" || 
                             window.location.hash === "#partnership" || 
                             pathname === "/partners" || 
@@ -136,6 +170,19 @@ export default function App() {
       } else if (isPartnership) {
         setActiveSection("partnership");
         window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        // Main homepage section, navigate to appropriate hash or scroll to top
+        const hashSection = window.location.hash.replace("#", "");
+        if (hashSection) {
+          setActiveSection(hashSection);
+          setTimeout(() => {
+            const el = document.getElementById(hashSection);
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        } else {
+          setActiveSection("hero");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       }
     };
 
