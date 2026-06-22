@@ -12,6 +12,7 @@ interface HeroProps {
   onStartCustomQuote: () => void;
   onStartDailyTreats: () => void;
   onStartPartnership: () => void;
+  onStartKidsParty: () => void;
 }
 
 const HERO_SLIDES = [
@@ -41,7 +42,7 @@ const HERO_SLIDES = [
   }
 ];
 
-export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats, onStartPartnership }: HeroProps) {
+export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats, onStartPartnership, onStartKidsParty }: HeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -132,6 +133,13 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
                 className="flex items-center justify-center space-x-2 bg-amber-50 px-6 py-4 text-xs font-bold uppercase tracking-widest text-[#9C7A1E] border-2 border-[#D4AF37]/40 hover:bg-gold hover:border-gold hover:text-white transition-colors cursor-pointer"
               >
                 <span>Partnership</span>
+              </button>
+
+              <button
+                onClick={onStartKidsParty}
+                className="flex items-center justify-center space-x-2 bg-[#D4AF37] px-6 py-4 text-xs font-bold uppercase tracking-widest text-stone-950 hover:bg-[#B49225] hover:text-white transition-colors cursor-pointer shadow-sm"
+              >
+                <span>Kids Party Packs</span>
               </button>
             </div>
           </div>

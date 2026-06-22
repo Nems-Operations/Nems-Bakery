@@ -20,6 +20,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import AdminPortalModal from "./components/AdminPortalModal";
 import Partnership from "./components/Partnership";
+import KidsPartyPlanner from "./components/KidsPartyPlanner";
 
 const DEFAULT_SETTINGS = {
   prices: {
@@ -103,6 +104,16 @@ export default function App() {
            pathname === "/partners/";
   });
 
+  const [isKidsPartyMode, setIsKidsPartyMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    const pathname = window.location.pathname;
+    return params.get("page") === "kids-party" || 
+           window.location.hash === "#kids-party" || 
+           pathname === "/party-packs" || 
+           pathname === "/party-packs/";
+  });
+
   const [activeSection, setActiveSection] = useState(() => {
     if (typeof window === "undefined") return "hero";
     const pathname = window.location.pathname;
@@ -112,6 +123,9 @@ export default function App() {
     }
     if (params.get("page") === "daily-treats" || window.location.hash === "#daily-treats" || pathname === "/daily-treats" || pathname === "/daily-treats/") {
       return "daily-treats";
+    }
+    if (params.get("page") === "kids-party" || window.location.hash === "#kids-party" || pathname === "/party-packs" || pathname === "/party-packs/") {
+      return "kids-party";
     }
     return "hero";
   });
@@ -147,7 +161,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Synchronize state with URL parameters/hash/pathnames for deep linking directly to daily treats or partnerships
+  // Synchronize state with URL parameters/hash/pathnames for deep linking directly to daily treats, partnerships or kids parties
   useEffect(() => {
     const handleUrlChange = () => {
       const params = new URLSearchParams(window.location.search);
@@ -160,15 +174,23 @@ export default function App() {
                             window.location.hash === "#partnership" || 
                             pathname === "/partners" || 
                             pathname === "/partners/";
+      const isKidsParty = params.get("page") === "kids-party" || 
+                          window.location.hash === "#kids-party" || 
+                          pathname === "/party-packs" || 
+                          pathname === "/party-packs/";
       
       setIsDailyTreatsMode(isTreats);
       setIsPartnershipMode(isPartnership);
+      setIsKidsPartyMode(isKidsParty);
       
       if (isTreats) {
         setActiveSection("daily-treats");
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else if (isPartnership) {
         setActiveSection("partnership");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (isKidsParty) {
+        setActiveSection("kids-party");
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         // Main homepage section, navigate to appropriate hash or scroll to top
@@ -204,19 +226,29 @@ export default function App() {
       window.history.pushState({ path: newUrl }, "", newUrl);
       setIsDailyTreatsMode(true);
       setIsPartnershipMode(false);
+      setIsKidsPartyMode(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (section === "partnership") {
       const newUrl = window.location.origin + "/partners";
       window.history.pushState({ path: newUrl }, "", newUrl);
       setIsPartnershipMode(true);
       setIsDailyTreatsMode(false);
+      setIsKidsPartyMode(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (section === "kids-party") {
+      const newUrl = window.location.origin + "/party-packs";
+      window.history.pushState({ path: newUrl }, "", newUrl);
+      setIsKidsPartyMode(true);
+      setIsDailyTreatsMode(false);
+      setIsPartnershipMode(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      if (isDailyTreatsMode || isPartnershipMode || window.location.pathname !== "/") {
+      if (isDailyTreatsMode || isPartnershipMode || isKidsPartyMode || window.location.pathname !== "/") {
         const newUrl = window.location.origin + "/";
         window.history.pushState({ path: newUrl }, "", newUrl);
         setIsDailyTreatsMode(false);
         setIsPartnershipMode(false);
+        setIsKidsPartyMode(false);
       }
       setTimeout(() => {
         const el = document.getElementById(section);
@@ -386,6 +418,12 @@ export default function App() {
       <main>
         {isPartnershipMode ? (
           <Partnership onBackToMenu={() => handleSetActiveSection("hero")} />
+        ) : isKidsPartyMode ? (
+          <KidsPartyPlanner 
+            onAddToBag={handleAddToBag} 
+            onBackToMenu={() => handleSetActiveSection("hero")}
+            onOpenCart={() => setIsCartOpen(true)}
+          />
         ) : isDailyTreatsMode ? (
           <>
             {/* Standalone Deep Link Welcoming Header */}
@@ -432,6 +470,7 @@ export default function App() {
               onStartCustomQuote={handleStartCustomQuote}
               onStartDailyTreats={handleStartDailyTreats}
               onStartPartnership={() => handleSetActiveSection("partnership")}
+              onStartKidsParty={() => handleSetActiveSection("kids-party")}
             />
 
             {/* Brand Promise Section */}
