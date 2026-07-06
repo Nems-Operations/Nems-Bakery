@@ -33,7 +33,6 @@ const DEFAULT_SETTINGS = {
     "heritage-koeksisters": { "2L": 125, "5L": 310, "10L": 620, "20L": 1150 },
     "retail-scone": 30,
     "retail-rusk-classic": 25,
-    "retail-rusk-seed": 30,
     "retail-biscuit-cherry": 10,
     "retail-biscuit-chocolate": 12,
     "retail-macaron-single": 18
@@ -47,7 +46,6 @@ const DEFAULT_SETTINGS = {
     "heritage-koeksisters": 45,
     "retail-scone": 100,
     "retail-rusk-classic": 75,
-    "retail-rusk-seed": 65,
     "retail-biscuit-cherry": 80,
     "retail-biscuit-chocolate": 85,
     "retail-macaron-single": 45

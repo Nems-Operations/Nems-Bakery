@@ -56,7 +56,6 @@ const PRODUCT_NAMES: Record<string, string> = {
   "snack-box": "Kiddies Party Snack Box (Boxes)",
   "retail-scone": "Individual Scone (Treat)",
   "retail-rusk-classic": "Classic Buttermilk Rusk (Treat)",
-  "retail-rusk-seed": "Almond Triple-Seed Rusk (Treat)",
   "retail-biscuit-cherry": "Piped Butter Biscuit Cherry (Treat)",
   "retail-biscuit-chocolate": "Dipped Chocolate Biscuit (Treat)",
   "retail-macaron-single": "Signature Single Macaron (Treat)"
