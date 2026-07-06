@@ -199,7 +199,7 @@ export const GALLERY_ITEMS: EventGalleryItem[] = [
     title: "Elegant Gold Wedding Banquets",
     theme: "Gold & White Premium Royalty",
     description: "A gorgeous 250-guest ceremony in Johannesburg featuring towering macaroon pyramids, warm gold decor backdrops, and butler-served mini-scone trays for early morning guest arrivals.",
-    image: "./images/decorated_venue_place_1783019276088.jpg",
+    image: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
     capacityRange: "100 - 450 Guests",
     tag: "Wedding"
   },
@@ -217,7 +217,7 @@ export const GALLERY_ITEMS: EventGalleryItem[] = [
     title: "Vibrant Lobola & Graduation Feasts",
     theme: "Traditional Celebration Styling",
     description: "South African celebratory gatherings utilizing 20L mega-buckets of scones and koeksisters alongside custom-braai platters, transporting food safely using our travel box fleet.",
-    image: "./images/family_event_gathering_1783018546656.jpg",
+    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80",
     capacityRange: "30 - 200 Guests",
     tag: "Family Heritage"
   }

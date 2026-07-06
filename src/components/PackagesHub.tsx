@@ -349,7 +349,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/bakery_buckets_hero_1783018519419.jpg" 
+                  src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80" 
                   alt="Bakery Buckets Traditional Delicacies with tea and scones"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
@@ -441,7 +441,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/custom_gift_packages.jpg" 
+                  src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=80" 
                   alt="Bespoke Bakery Gift Box"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
@@ -487,7 +487,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/kids_party_packs_1783018532665.jpg" 
+                  src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=800&q=80" 
                   alt="Spiderman party packs and princess cupcake box"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
@@ -533,7 +533,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/decorated_venue_place_1783019276088.jpg" 
+                  src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" 
                   alt="Decorated Venue Reception Place"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
