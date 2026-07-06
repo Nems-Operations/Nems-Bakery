@@ -35,6 +35,16 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     badge: "Tea Time Favourite"
   },
   {
+    id: "retail-rusk-classic",
+    name: "Traditional Classic Buttermilk Rusk",
+    category: Category.DESSERTS,
+    description: "Expertly double-baked pure buttermilk rusk. Perfectly block-cut, crunchy, dry, and ready for hot coffee or tea dunking.",
+    image: "./images/rusks_pack.png",
+    isBucket: false,
+    basePrice: 20,
+    badge: "Dunking Essential"
+  },
+  {
     id: "retail-biscuit-cherry",
     name: "Piped Butter Biscuit with Cherry",
     category: Category.BAKERY_BUCKETS,
@@ -72,6 +82,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
 // Flavor options for retail goods mapping
 const RETAIL_FLAVORS_OPTIONS: Record<string, string[]> = {
   "retail-scone": ["Vanilla"],
+  "retail-rusk-classic": ["Buttermilk"],
   "retail-biscuit-cherry": ["Cherry Almond Butter", "Lemon Glazed Cherry", "Vanilla Berry Twist"],
   "retail-biscuit-chocolate": ["Belgian Choc Dipped", "Double Chocolate Mint", "Double Orange Cocoa"],
   "retail-macaron-single": ["Strawberry Cream", "Velvet Vanilla", "Lemon Meringue", "Belgian Dark Coco", "Salted Butter Caramel"]
@@ -118,7 +129,7 @@ export default function DailyTreats({
   const [activeTab, setActiveTab] = useState<"muffins" | "cupcakes">("muffins");
 
   // Selection states for Custom Muffin Pack builder
-  const [selectedMuffinPack, setSelectedMuffinPack] = useState<number>(6);
+  const [selectedMuffinQty, setSelectedMuffinQty] = useState<number>(1);
   const [selectedMuffinFlavor, setSelectedMuffinFlavor] = useState<string>("Chocolate");
 
   // Selection states for Custom Cupcake Pack builder
@@ -128,6 +139,7 @@ export default function DailyTreats({
   // Chosen flavors per standard retail item
   const [selectedItemFlavors, setSelectedItemFlavors] = useState<Record<string, string>>({
     "retail-scone": "Vanilla",
+    "retail-rusk-classic": "Buttermilk",
     "retail-biscuit-cherry": "Cherry Almond Butter",
     "retail-biscuit-chocolate": "Belgian Choc Dipped",
     "retail-macaron-single": "Strawberry Cream",
@@ -237,22 +249,23 @@ export default function DailyTreats({
   // Click handler to register Muffin or Cupcake pack directly into local basket
   const addCustomPack = (type: "muffin" | "cupcake") => {
     if (type === "muffin") {
-      const price = MUFFIN_PRICES[selectedMuffinPack];
+      const unitPrice = 20.00;
+      const price = unitPrice * selectedMuffinQty;
       const flavor = selectedMuffinFlavor;
       
-      const newMuffinPack: MenuItem = {
-        id: `daily-muffin-${selectedMuffinPack}`,
-        name: `Craft Muffin Pack (${selectedMuffinPack} Pcs)`,
+      const newMuffin: MenuItem = {
+        id: "daily-muffin-individual",
+        name: "Individual Gourmet Muffin",
         category: Category.DESSERTS,
-        description: `Daily homemade oven-fresh muffins, hand-mixed using farm ingredients. Pack size: ${selectedMuffinPack}.`,
+        description: "Daily homemade oven-fresh muffin, hand-mixed using farm ingredients.",
         image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600",
         isBucket: false,
-        basePrice: price,
-        badge: "Oven Hot Pack"
+        basePrice: unitPrice,
+        badge: "Oven Hot"
       };
 
-      onAddToBag(newMuffinPack, 1, undefined, specialInstructions, flavor);
-      setAddedFeedbackMessage(`Added ${selectedMuffinPack} Muffin Pack (${flavor}) for R ${price.toFixed(2)} to bag!`);
+      onAddToBag(newMuffin, selectedMuffinQty, undefined, specialInstructions, flavor);
+      setAddedFeedbackMessage(`Added ${selectedMuffinQty} Individual Gourmet Muffin${selectedMuffinQty > 1 ? "s" : ""} (${flavor}) for R ${price.toFixed(2)} to bag!`);
     } else {
       const price = CUPCAKE_PRICES[selectedCupcakePack];
       const flavor = selectedCupcakeFlavor;
@@ -297,8 +310,32 @@ export default function DailyTreats({
     <section id="daily-treats" className="scroll-mt-20 bg-stone-50 py-16 sm:py-24 border-b border-gold">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
-        {/* 1. Interactive Sliding Custom Pack Segment (Muffins vs Cupcakes) */}
+        {/* 1. Interactive Sliding Custom Segment (Muffins vs Cupcakes) */}
         <div className="mb-14 max-w-4xl mx-auto">
+          
+          {/* Sub-toggle buttons to switch between Muffins & Cupcakes */}
+          <div className="flex items-center justify-center space-x-3 mb-6">
+            <button
+              onClick={() => setActiveTab("muffins")}
+              className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider border rounded-xl transition-all ${
+                activeTab === "muffins"
+                  ? "bg-gold text-white border-gold shadow-sm"
+                  : "bg-white text-stone-600 border-stone-200 hover:border-gold"
+              }`}
+            >
+              🧁 Daily Gourmet Muffins
+            </button>
+            <button
+              onClick={() => setActiveTab("cupcakes")}
+              className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider border rounded-xl transition-all ${
+                activeTab === "cupcakes"
+                  ? "bg-red-600 text-white border-red-600 shadow-sm"
+                  : "bg-white text-stone-600 border-stone-200 hover:border-red-500"
+              }`}
+            >
+              🧁 Daily Cupcakes (Sold Out)
+            </button>
+          </div>
           
           {/* Sliding container housing Muffins (Left/0%) and Cupcakes (Right/-50%) */}
           <div className="bg-white border-2 border-gold rounded-2xl overflow-hidden shadow-md">
@@ -307,7 +344,7 @@ export default function DailyTreats({
               style={{ transform: activeTab === "muffins" ? "translateX(0%)" : "translateX(-50%)" }}
             >
               
-              {/* PAGE A: MUFFINS PACK Customizer */}
+              {/* PAGE A: MUFFINS Customizer */}
               <div id="daily-muffin-section" className="scroll-mt-24 w-1/2 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-[#FDFBF7]">
                 <div className="space-y-4">
                   <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-stone-100 border border-gold/40 relative">
@@ -334,28 +371,7 @@ export default function DailyTreats({
 
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">Step 1: Choose Muffin Pack Size</span>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[6, 12, 24].map((size) => (
-                        <button
-                          key={`muffin-${size}`}
-                          type="button"
-                          onClick={() => setSelectedMuffinPack(size)}
-                          className={`py-3 px-2 border rounded-lg text-center transition-all ${
-                            selectedMuffinPack === size
-                              ? "bg-stone-950 text-white border-stone-950 font-bold scale-[1.03]"
-                              : "bg-white text-stone-700 border-stone-200 hover:border-gold"
-                          }`}
-                        >
-                          <span className="block text-xs font-black">{size} Pack</span>
-                          <span className="block font-mono text-[10px] mt-0.5 opacity-80">R {MUFFIN_PRICES[size].toFixed(2)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1.5">Step 2: Choose Muffin Flavor</span>
+                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1.5">Step 1: Choose Muffin Flavor</span>
                     <select
                       value={selectedMuffinFlavor}
                       onChange={(e) => setSelectedMuffinFlavor(e.target.value)}
@@ -369,11 +385,36 @@ export default function DailyTreats({
                     </select>
                   </div>
 
+                  <div>
+                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">Step 2: Choose Quantity</span>
+                    <div className="flex items-center border border-stone-200 bg-neutral-50 rounded-lg overflow-hidden h-11 w-32">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMuffinQty(prev => Math.max(1, prev - 1))}
+                        className="px-3.5 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-lg w-10 text-center"
+                        aria-label="Decrease Quantity"
+                      >
+                        -
+                      </button>
+                      <span className="flex-1 text-xs font-bold text-stone-950 font-mono text-center">
+                        {selectedMuffinQty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMuffinQty(prev => prev + 1)}
+                        className="px-3.5 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-lg w-10 text-center"
+                        aria-label="Increase Quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="bg-stone-100/80 p-4 border border-stone-200/60 rounded-xl flex items-center justify-between">
                     <div>
                       <span className="text-[9px] uppercase tracking-wider text-stone-500 font-bold block">Grand Price Summary</span>
                       <strong className="text-xl font-bold font-mono text-stone-950">
-                        R {MUFFIN_PRICES[selectedMuffinPack].toFixed(2)}
+                        R {(20.00 * selectedMuffinQty).toFixed(2)}
                       </strong>
                     </div>
                     <button
@@ -382,7 +423,7 @@ export default function DailyTreats({
                       className="bg-gold hover:bg-stone-950 text-white font-extrabold text-xs uppercase tracking-widest py-3 px-5 transition-all rounded-lg flex items-center space-x-2"
                     >
                       <ShoppingBag className="h-4 w-4" />
-                      <span>Add Muffin Pack</span>
+                      <span>Add Muffin</span>
                     </button>
                   </div>
                 </div>

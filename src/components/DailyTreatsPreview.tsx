@@ -44,14 +44,6 @@ const PREVIEW_ITEMS = [
     badge: "Lux Frosting", isOutOfStock: true
   },
   {
-    id: "retail-rusk-seed",
-    name: "Almond & Seed Rusk",
-    price: 30.00,
-    description: "Gourmet rusk with almonds & triple-seeds.",
-    image: "./images/rusks_pack.png",
-    badge: "Low Sugar"
-  },
-  {
     id: "retail-biscuit-cherry",
     name: "Cherry Butter Biscuit",
     price: 10.00,
