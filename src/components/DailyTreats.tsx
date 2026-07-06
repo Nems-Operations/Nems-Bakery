@@ -35,26 +35,6 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     badge: "Tea Time Favourite"
   },
   {
-    id: "retail-rusk-classic",
-    name: "Traditional Classic Small Rusk",
-    category: Category.BAKERY_BUCKETS,
-    description: "Expertly double-baked pure buttermilk rusk. Perfectly block-cut, crunchy, dry, and ready for hot coffee or tea dunking.",
-    image: "./images/rusks_pack.png",
-    isBucket: false,
-    basePrice: 20,
-    badge: "Dunking Essential"
-  },
-  {
-    id: "retail-rusk-seed",
-    name: "Gourmet Almond & Triple-Seed Rusk",
-    category: Category.BAKERY_BUCKETS,
-    description: "Premium wellness rusk baked with real farm butter, thick roasted almonds, pumpkin seeds, sesame, and sunflower seeds.",
-    image: "./images/rusks_pack.png",
-    isBucket: false,
-    basePrice: 30,
-    badge: "Low Sugar"
-  },
-  {
     id: "retail-biscuit-cherry",
     name: "Piped Butter Biscuit with Cherry",
     category: Category.BAKERY_BUCKETS,
@@ -91,9 +71,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
 
 // Flavor options for retail goods mapping
 const RETAIL_FLAVORS_OPTIONS: Record<string, string[]> = {
-  "retail-scone": ["Classic Buttermilk", "Sweet Raisin", "Savory Cheese & Chives"],
-  "retail-rusk-classic": ["Pure Buttermilk", "Spiced Aniseed", "Wholewheat Crunch"],
-  "retail-rusk-seed": ["Almond & Triple-Seed", "Pumpkin Seed Wellness", "Pecan Crunch"],
+  "retail-scone": ["Vanilla"],
   "retail-biscuit-cherry": ["Cherry Almond Butter", "Lemon Glazed Cherry", "Vanilla Berry Twist"],
   "retail-biscuit-chocolate": ["Belgian Choc Dipped", "Double Chocolate Mint", "Double Orange Cocoa"],
   "retail-macaron-single": ["Strawberry Cream", "Velvet Vanilla", "Lemon Meringue", "Belgian Dark Coco", "Salted Butter Caramel"]
@@ -101,9 +79,9 @@ const RETAIL_FLAVORS_OPTIONS: Record<string, string[]> = {
 
 // Premium pricing maps for Muffins & Cupcakes
 const MUFFIN_PRICES: Record<number, number> = {
-  6: 51.00,
-  12: 102.00,
-  24: 204.00
+  6: 20.00,
+  12: 20.00,
+  24: 20.00
 };
 
 const CUPCAKE_PRICES: Record<number, number> = {
@@ -114,11 +92,10 @@ const CUPCAKE_PRICES: Record<number, number> = {
 
 // Common flavors lists
 const MUFFIN_FLAVORS = [
-  "Blueberry Crumble", 
-  "Classic Choc-Chip", 
-  "Double Chocolate Fudge", 
-  "Lemon Poppy Seed", 
-  "Harvest Bran & Raisin"
+  "Chocolate", 
+  "Choc-Mint", 
+  "Vanilla", 
+  "Cappuccino"
 ];
 
 const CUPCAKE_FLAVORS = [
@@ -142,7 +119,7 @@ export default function DailyTreats({
 
   // Selection states for Custom Muffin Pack builder
   const [selectedMuffinPack, setSelectedMuffinPack] = useState<number>(6);
-  const [selectedMuffinFlavor, setSelectedMuffinFlavor] = useState<string>("Blueberry Crumble");
+  const [selectedMuffinFlavor, setSelectedMuffinFlavor] = useState<string>("Chocolate");
 
   // Selection states for Custom Cupcake Pack builder
   const [selectedCupcakePack, setSelectedCupcakePack] = useState<number>(6);
@@ -150,9 +127,7 @@ export default function DailyTreats({
 
   // Chosen flavors per standard retail item
   const [selectedItemFlavors, setSelectedItemFlavors] = useState<Record<string, string>>({
-    "retail-scone": "Classic Buttermilk",
-    "retail-rusk-classic": "Pure Buttermilk",
-    "retail-rusk-seed": "Almond & Triple-Seed",
+    "retail-scone": "Vanilla",
     "retail-biscuit-cherry": "Cherry Almond Butter",
     "retail-biscuit-chocolate": "Belgian Choc Dipped",
     "retail-macaron-single": "Strawberry Cream",
@@ -343,7 +318,7 @@ export default function DailyTreats({
                       className="w-full h-full object-cover"
                     />
                     <span className="absolute top-3 left-3 bg-[#D4AF37] text-white px-2.5 py-1 text-[8.5px] font-extrabold uppercase tracking-widest rounded-sm">
-                      Muffins: R 8.50
+                      Muffins: R 20.00
                     </span>
                   </div>
 
@@ -413,18 +388,18 @@ export default function DailyTreats({
                 </div>
               </div>
 
-              {/* PAGE B: CUPCAKES PACK Customizer */}
-              <div id="daily-cupcake-section" className="scroll-mt-24 w-1/2 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-[#FCFAFA]">
+              {/* PAGE B: CUPCAKES PACK Customizer (Out of Stock / Sold Out) */}
+              <div id="daily-cupcake-section" className="scroll-mt-24 w-1/2 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-[#FCFAFA] relative">
                 <div className="space-y-4">
-                  <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-stone-100 border border-gold/40 relative">
+                  <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-stone-100 border border-red-500/40 relative grayscale-[60%]">
                     <img
                       src="https://images.unsplash.com/photo-1576618144449-cd747ffb7ded?auto=format&fit=crop&q=80&w=600"
-                      alt="Artisanal Soft Cupcakes"
+                      alt="Artisanal Soft Cupcakes - Sold Out"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
                     />
-                    <span className="absolute top-3 left-3 bg-[#ECA1A6] text-stone-900 px-2.5 py-1 text-[8.5px] font-extrabold uppercase tracking-widest rounded-sm">
-                      Cupcakes: R 6.00
+                    <span className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 text-[8.5px] font-black uppercase tracking-widest rounded-sm shadow-sm">
+                      SOLD OUT
                     </span>
                   </div>
 
@@ -438,20 +413,16 @@ export default function DailyTreats({
                   </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 opacity-60">
                   <div>
                     <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">Step 1: Choose Cupcake Pack Size</span>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2 pointer-events-none">
                       {[6, 12, 24].map((size) => (
                         <button
                           key={`cupcake-${size}`}
                           type="button"
-                          onClick={() => setSelectedCupcakePack(size)}
-                          className={`py-3 px-2 border rounded-lg text-center transition-all ${
-                            selectedCupcakePack === size
-                              ? "bg-stone-950 text-white border-stone-950 font-bold scale-[1.03]"
-                              : "bg-white text-stone-700 border-stone-200 hover:border-gold"
-                          }`}
+                          disabled={true}
+                          className={`py-3 px-2 border rounded-lg text-center transition-all bg-stone-100 text-stone-400 border-stone-200`}
                         >
                           <span className="block text-xs font-black">{size} Pack</span>
                           <span className="block font-mono text-[10px] mt-0.5 opacity-80">R {CUPCAKE_PRICES[size].toFixed(2)}</span>
@@ -463,9 +434,9 @@ export default function DailyTreats({
                   <div>
                     <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1.5">Step 2: Choose Cupcake Flavor</span>
                     <select
+                      disabled={true}
                       value={selectedCupcakeFlavor}
-                      onChange={(e) => setSelectedCupcakeFlavor(e.target.value)}
-                      className="w-full text-xs border border-stone-200 rounded-lg px-3 py-3 focus:outline-none focus:border-gold bg-[#FCFAF7] text-stone-900 font-semibold"
+                      className="w-full text-xs border border-stone-200 rounded-lg px-3 py-3 bg-[#FCFAF7] text-stone-400 font-semibold cursor-not-allowed"
                     >
                       {CUPCAKE_FLAVORS.map((flavor) => (
                         <option key={flavor} value={flavor}>
@@ -475,7 +446,7 @@ export default function DailyTreats({
                     </select>
                   </div>
 
-                  <div className="bg-stone-100/80 p-4 border border-stone-200/60 rounded-xl flex items-center justify-between">
+                  <div className="bg-stone-150 p-4 border border-stone-250 rounded-xl flex items-center justify-between">
                     <div>
                       <span className="text-[9px] uppercase tracking-wider text-stone-500 font-bold block">Grand Price Summary</span>
                       <strong className="text-xl font-bold font-mono text-stone-950">
@@ -484,11 +455,10 @@ export default function DailyTreats({
                     </div>
                     <button
                       type="button"
-                      onClick={() => addCustomPack("cupcake")}
-                      className="bg-[#ECA1A6] hover:bg-stone-950 text-stone-950 hover:text-white font-extrabold text-xs uppercase tracking-widest py-3 px-5 transition-all rounded-lg flex items-center space-x-2 border border-rose-200"
+                      disabled={true}
+                      className="bg-stone-300 text-stone-500 font-extrabold text-xs uppercase tracking-widest py-3 px-5 transition-all rounded-lg flex items-center space-x-2 border border-stone-400 cursor-not-allowed"
                     >
-                      <ShoppingBag className="h-4 w-4" />
-                      <span>Add Cupcake Pack</span>
+                      <span>Sold Out</span>
                     </button>
                   </div>
                 </div>

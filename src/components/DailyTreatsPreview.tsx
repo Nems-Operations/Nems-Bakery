@@ -30,7 +30,7 @@ const PREVIEW_ITEMS = [
   {
     id: "daily-muffin",
     name: "Gourmet Muffin",
-    price: 8.50,
+    price: 20.00,
     description: "Freshly baked moist morning INDULGENCE.",
     image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600",
     badge: "Oven Fresh"
@@ -41,7 +41,7 @@ const PREVIEW_ITEMS = [
     price: 6.00,
     description: "Decorated sponge with rich frosting.",
     image: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&q=80&w=600",
-    badge: "Lux Frosting"
+    badge: "Lux Frosting", isOutOfStock: true
   },
   {
     id: "retail-rusk-seed",
@@ -310,9 +310,21 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
                     </div>
                   )}
 
+                  {item.isOutOfStock && (
+                    <div className="absolute inset-0 bg-stone-900/70 flex items-center justify-center p-2 text-center select-none z-10 coming-soon-banner">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-red-600 text-white border border-red-500 px-2 py-1 shadow-sm rounded-xs">
+                        SOLD OUT
+                      </span>
+                    </div>
+                  )}
+
                   {item.isComingSoon ? (
                     <span className="absolute bottom-2 right-2 bg-stone-800/80 backdrop-blur-xs text-white px-2 py-0.5 text-[8px] font-bold rounded-md uppercase tracking-wide">
                       Muted
+                    </span>
+                  ) : item.isOutOfStock ? (
+                    <span className="absolute bottom-2 right-2 bg-red-600/90 backdrop-blur-xs text-white px-2.5 py-1 text-xs font-bold font-mono rounded-md">
+                      Sold Out
                     </span>
                   ) : (
                     <span className="absolute bottom-2 right-2 bg-stone-950/80 backdrop-blur-xs text-white px-2.5 py-1 text-xs font-bold font-mono rounded-md">
@@ -331,9 +343,9 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
                   </p>
                   
                   <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[10px] font-bold text-stone-400 group-hover:text-stone-950 transition-colors uppercase tracking-wider">
-                    <span>{item.isComingSoon ? "Arriving Soon" : "Order Daily Fresh"}</span>
+                    <span>{item.isComingSoon ? "Arriving Soon" : item.isOutOfStock ? "Sold Out" : "Order Daily Fresh"}</span>
                     <span className="flex items-center text-[#C5A028]">
-                      <span>{item.isComingSoon ? "Unavailable" : "Shop Now"}</span>
+                      <span>{item.isComingSoon ? "Unavailable" : item.isOutOfStock ? "Sold Out" : "Shop Now"}</span>
                       <ArrowRight className="h-3.5 w-3.5 ml-1" />
                     </span>
                   </div>

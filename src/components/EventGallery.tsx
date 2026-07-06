@@ -9,9 +9,11 @@ import { Users, Tag, Award, Heart } from "lucide-react";
 
 interface EventGalleryProps {
   onSelectEventTemplate: (type: "platter" | "braai" | "hightea") => void;
+  isModal?: boolean;
+  onClose?: () => void;
 }
 
-export default function EventGallery({ onSelectEventTemplate }: EventGalleryProps) {
+export default function EventGallery({ onSelectEventTemplate, isModal = false, onClose }: EventGalleryProps) {
   const [activeFilter, setActiveFilter] = useState<string>("All");
 
   const filterTags = ["All", "Wedding", "Corporate", "Family Heritage"];
@@ -27,7 +29,23 @@ export default function EventGallery({ onSelectEventTemplate }: EventGalleryProp
   };
 
   return (
-    <section id="event-gallery" className="scroll-mt-20 bg-white py-16 sm:py-24">
+    <section 
+      id={isModal ? undefined : "event-gallery"} 
+      className={isModal 
+        ? "relative bg-white p-4 md:p-8 max-h-[90vh] overflow-y-auto rounded-3xl border border-stone-200/80 text-stone-900 shadow-2xl" 
+        : "scroll-mt-20 bg-white py-16 sm:py-24"
+      }
+    >
+      {isModal && onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-stone-100 hover:bg-stone-200 text-stone-850 hover:text-stone-950 rounded-full transition-all z-50 cursor-pointer animate-pulse"
+          aria-label="Close"
+        >
+          <span className="text-sm font-bold font-sans">✕</span>
+        </button>
+      )}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
@@ -106,10 +124,14 @@ export default function EventGallery({ onSelectEventTemplate }: EventGalleryProp
                     onClick={() => {
                       const computedType = mapTagToPackageType(item.tag);
                       onSelectEventTemplate(computedType);
-                      // Scroll to builder
-                      const element = document.getElementById("catering-builder");
-                      if (element) {
-                        element.scrollIntoView({ behavior: "smooth" });
+                      if (isModal && onClose) {
+                        onClose();
+                      } else {
+                        // Scroll to builder
+                        const element = document.getElementById("catering-builder");
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth" });
+                        }
                       }
                     }}
                     className="rounded-full bg-stone-950 hover:bg-[#D4AF37] hover:text-stone-950 text-white py-2 px-4 text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm"

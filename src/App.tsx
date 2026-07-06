@@ -21,6 +21,7 @@ import { db } from "./firebase";
 import AdminPortalModal from "./components/AdminPortalModal";
 import Partnership from "./components/Partnership";
 import KidsPartyPlanner from "./components/KidsPartyPlanner";
+import PackagesHub from "./components/PackagesHub";
 
 const DEFAULT_SETTINGS = {
   prices: {
@@ -141,6 +142,15 @@ export default function App() {
 
   const [siteSettings, setSiteSettings] = useState<any>(DEFAULT_SETTINGS);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+
+  const [initialBucketItemId, setInitialBucketItemId] = useState<string | undefined>(undefined);
+  const [initialBucketSize, setInitialBucketSize] = useState<BucketSize | undefined>(undefined);
+
+  const handleSelectProduct = (itemId: string, size?: string) => {
+    setInitialBucketItemId(itemId);
+    setInitialBucketSize(size as BucketSize);
+    handleSetActiveSection("ordering");
+  };
 
   // Load site settings statically once on component mount
   useEffect(() => {
@@ -460,12 +470,6 @@ export default function App() {
       <main>
         {isPartnershipMode ? (
           <Partnership onBackToMenu={() => handleSetActiveSection("hero")} />
-        ) : isKidsPartyMode ? (
-          <KidsPartyPlanner 
-            onAddToBag={handleAddToBag} 
-            onBackToMenu={() => handleSetActiveSection("hero")}
-            onOpenCart={() => setIsCartOpen(true)}
-          />
         ) : isDailyTreatsMode ? (
           <>
             {/* Standalone Deep Link Welcoming Header */}
@@ -513,6 +517,7 @@ export default function App() {
               onStartDailyTreats={handleStartDailyTreats}
               onStartPartnership={() => handleSetActiveSection("partnership")}
               onStartKidsParty={() => handleSetActiveSection("kids-party")}
+              onSelectProduct={handleSelectProduct}
             />
 
             {/* Brand Promise Section */}
@@ -553,18 +558,39 @@ export default function App() {
             {/* Daily Treats & Small Individual Orders Interactive Preview Slider */}
             <DailyTreatsPreview onExplore={handleExploreDailyTreats} />
 
-            {/* 2. Interactive Online Ordering Section */}
-            <OrderingSystem 
+            {/* 2. Unified Packages & Catering Hub Section */}
+            <PackagesHub 
               onAddToBag={handleAddToBag}
               siteSettings={siteSettings}
-            />
-
-            {/* 3. Custom Dietary & Multi-Level Catering Builder Section */}
-            <CateringPackageBuilder />
-
-            {/* 4. Weddings and Celebrations Event Showcase */}
-            <EventGallery 
+              isKidsPartyOpenByDefault={isKidsPartyMode}
+              onCloseKidsParty={() => {
+                setIsKidsPartyMode(false);
+                const newUrl = window.location.origin + window.location.pathname;
+                window.history.pushState({ path: newUrl }, "", newUrl);
+              }}
+              isCateringOpenByDefault={activeSection === "catering-builder"}
+              onCloseCatering={() => {
+                setActiveSection("hero");
+                const newUrl = window.location.origin + window.location.pathname;
+                window.history.pushState({ path: newUrl }, "", newUrl);
+              }}
+              isBucketsOpenByDefault={activeSection === "ordering"}
+              onCloseBuckets={() => {
+                setActiveSection("hero");
+                setInitialBucketItemId(undefined);
+                setInitialBucketSize(undefined);
+                const newUrl = window.location.origin + window.location.pathname;
+                window.history.pushState({ path: newUrl }, "", newUrl);
+              }}
+              isEventsOpenByDefault={activeSection === "event-gallery"}
+              onCloseEvents={() => {
+                setActiveSection("hero");
+                const newUrl = window.location.origin + window.location.pathname;
+                window.history.pushState({ path: newUrl }, "", newUrl);
+              }}
               onSelectEventTemplate={handleSelectEventTemplate}
+              initialBucketItemId={initialBucketItemId}
+              initialBucketSize={initialBucketSize}
             />
 
             {/* 5. Grow Your Business With Nems Bakery Partnership Banner */}

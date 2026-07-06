@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Category, MenuItem, BucketSize } from "../types";
 import { MENU_ITEMS } from "../data";
 import { ShoppingBag, ChevronRight, Info, AlertCircle, Sparkles, Check } from "lucide-react";
@@ -17,20 +17,31 @@ interface OrderingSystemProps {
     selectedFlavor?: string
   ) => void;
   siteSettings?: any;
+  isModal?: boolean;
+  onClose?: () => void;
+  initialItemId?: string;
+  initialSize?: BucketSize;
 }
 
 const BUCKET_FLAVOR_OPTIONS: Record<string, string[]> = {
-  "scones-bucket": ["Classic Buttermilk Only", "Sweet Sultana Infusion", "Savory Cheese & Herbs", "Mixed Assortment (Sweet & Savory)"],
-  "muffins-bucket": ["Classic Chocolate Chips", "Harvest Bran & Raisin", "Double Belgian Chocolate", "Lemon Poppy Seed Splash", "Assorted Morning Feast"],
+  "scones-bucket": ["Vanilla"],
+  "muffins-bucket": ["Chocolate", "Choc-Mint", "Vanilla", "Cappuccino"],
   "biscuits-bucket": ["Signature Premium Mixture (Plain, Cherry, Choc, 100s & 1000s, Piped)", "Traditional Butter Swirl", "Cherry Crowned Mix", "Choc-Dipped & Sprinkles Only"],
-  "rusks-bucket": ["Classic Farm Buttermilk", "Roasted Almond & Seed", "Assorted Dip Platter"],
+  "rusks-bucket": ["Buttermilk"],
   "gourmet-macarons": ["Traditional Pastel Mix", "Belgian Dark Choc & Strawberry", "Cream Caramel & Pistachio"],
   "koeksisters-deluxe": ["Traditional Spice Syrup", "Golden Ginger & Citrus Syrup"],
   "travel-box": ["Standard Mixed Box (Savory & Sweet)"],
   "snack-box": ["Standard Kid-Safe Sweet Mix"]
 };
 
-export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSystemProps) {
+export default function OrderingSystem({ 
+  onAddToBag, 
+  siteSettings, 
+  isModal = false, 
+  onClose,
+  initialItemId,
+  initialSize
+}: OrderingSystemProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category>(Category.BAKERY_BUCKETS);
   
   // Track selected configurations per item ID for rendering selectors
@@ -42,6 +53,28 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
     "gourmet-macarons": "5L", // Uses sizes of macarons
     "koeksisters-deluxe": "5L"
   });
+
+  // Handle initial pre-selection deep link inputs
+  useEffect(() => {
+    if (initialItemId) {
+      const foundItem = MENU_ITEMS.find(item => item.id === initialItemId);
+      if (foundItem) {
+        setSelectedCategory(foundItem.category);
+        
+        if (initialSize) {
+          setSizeSelection((prev) => ({ ...prev, [initialItemId]: initialSize }));
+        }
+
+        // Scroll the item into view inside the modal
+        setTimeout(() => {
+          const el = document.getElementById(`order-item-${initialItemId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 400);
+      }
+    }
+  }, [initialItemId, initialSize]);
 
   const [quantities, setQuantities] = useState<Record<string, number>>({
     "scones-bucket": 1,
@@ -56,10 +89,10 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
 
   // Track flavor selections per bucket item IDs
   const [flavorSelection, setFlavorSelection] = useState<Record<string, string>>({
-    "scones-bucket": "Classic Buttermilk Only",
-    "muffins-bucket": "Classic Chocolate Chips",
+    "scones-bucket": "Vanilla",
+    "muffins-bucket": "Chocolate",
     "biscuits-bucket": "Signature Premium Mixture (Plain, Cherry, Choc, 100s & 1000s, Piped)",
-    "rusks-bucket": "Classic Farm Buttermilk",
+    "rusks-bucket": "Buttermilk",
     "gourmet-macarons": "Traditional Pastel Mix",
     "koeksisters-deluxe": "Traditional Spice Syrup",
   });
@@ -111,7 +144,23 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
   };
 
   return (
-    <section id="ordering" className="scroll-mt-20 bg-white py-16 sm:py-24 border-b border-gold">
+    <section 
+      id={isModal ? undefined : "ordering"} 
+      className={isModal 
+        ? "relative bg-white p-4 md:p-8 max-h-[90vh] overflow-y-auto rounded-3xl border border-stone-200/80 text-stone-900 shadow-2xl" 
+        : "scroll-mt-20 bg-white py-16 sm:py-24 border-b border-gold"
+      }
+    >
+      {isModal && onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-stone-100 hover:bg-stone-200 text-stone-850 hover:text-stone-950 rounded-full transition-all z-50 cursor-pointer animate-pulse"
+          aria-label="Close"
+        >
+          <span className="text-sm font-bold font-sans">✕</span>
+        </button>
+      )}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
@@ -178,7 +227,12 @@ export default function OrderingSystem({ onAddToBag, siteSettings }: OrderingSys
             return (
               <div 
                 key={item.id} 
-                className={`group flex flex-col justify-between overflow-hidden bg-white border border-gold shadow-sm hover:shadow-md hover:translate-y-[-2px] transition-all duration-300 relative ${
+                id={`order-item-${item.id}`}
+                className={`group flex flex-col justify-between overflow-hidden bg-white border shadow-sm hover:shadow-md hover:translate-y-[-2px] transition-all duration-300 relative ${
+                  initialItemId === item.id 
+                    ? "border-amber-500 ring-4 ring-amber-500/25 scale-[1.01]" 
+                    : "border-gold"
+                } ${
                   isOutOfStock ? "grayscale-[40%] opacity-80" : ""
                 }`}
               >

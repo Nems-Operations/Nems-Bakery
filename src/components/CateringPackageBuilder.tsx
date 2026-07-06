@@ -9,7 +9,12 @@ import { FileText, CheckCircle, Calculator, PhoneCall, Award, Leaf, Printer, Rot
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 
-export default function CateringPackageBuilder() {
+interface CateringPackageBuilderProps {
+  isModal?: boolean;
+  onClose?: () => void;
+}
+
+export default function CateringPackageBuilder({ isModal = false, onClose }: CateringPackageBuilderProps = {}) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -128,21 +133,37 @@ export default function CateringPackageBuilder() {
   };
 
   return (
-    <section id="catering-builder" className="scroll-mt-20 bg-[#FAF9F5] py-16 sm:py-24 border-t border-gold">
+    <section 
+      id={isModal ? undefined : "catering-builder"} 
+      className={isModal 
+        ? "relative bg-[#FAF9F5] p-2 md:p-6 max-h-[90vh] overflow-y-auto rounded-3xl border border-stone-200/80 text-stone-900 shadow-2xl" 
+        : "scroll-mt-20 bg-[#FAF9F5] py-16 sm:py-24 border-t border-gold"
+      }
+    >
+      {isModal && onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 bg-stone-100 hover:bg-stone-200 text-stone-850 hover:text-stone-950 rounded-full transition-all z-50 cursor-pointer"
+          aria-label="Close"
+        >
+          <span className="text-sm font-bold font-sans">✕</span>
+        </button>
+      )}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
-        <div className="text-center max-w-2xl mx-auto space-y-4 mb-16">
+        <div className={`text-center max-w-2xl mx-auto space-y-4 ${isModal ? "mb-10 pt-4" : "mb-16"}`}>
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-gold block">Gourmet Catering Customizer</span>
-          <h2 className="serif text-4xl font-bold tracking-tight text-ink sm:text-5xl">
+          <h2 className="serif text-3xl sm:text-4xl font-bold tracking-tight text-ink">
             Custom Catering Package Builder
           </h2>
-          <p className="text-sm text-stone-600">
+          <p className="text-xs sm:text-sm text-stone-600">
             Design your ideal South African feast below. Adjust your guest count, select dietary requirements, and add specialized travel or snack packages. Get a beautiful, live custom quote instantly.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className={isModal ? "grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" : "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"}>
           
           {/* Main Inquiry Form Section */}
           <div className="lg:col-span-7 bg-white border border-gold p-6 sm:p-8" id="catering-builder-form">

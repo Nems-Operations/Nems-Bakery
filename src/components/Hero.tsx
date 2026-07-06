@@ -13,6 +13,7 @@ interface HeroProps {
   onStartDailyTreats: () => void;
   onStartPartnership: () => void;
   onStartKidsParty: () => void;
+  onSelectProduct?: (itemId: string, size?: string) => void;
 }
 
 const HERO_SLIDES = [
@@ -20,29 +21,37 @@ const HERO_SLIDES = [
     title: "Scone Buckets From",
     priceText: "R 70",
     image: "./images/scones_bucket_new_1780975055905.png",
-    alt: "Scones starting from R70"
+    alt: "Scones starting from R70",
+    itemId: "scones-bucket",
+    size: "10L" // Using 10L as requested for "10L scones straight to bucket scones sections"
   },
   {
     title: "Muffins starting from",
     priceText: "R 85",
     image: "./images/muffins_bucket_new_1780975069955.png",
-    alt: "Muffins starting from R85"
+    alt: "Muffins starting from R85",
+    itemId: "muffins-bucket",
+    size: "5L"
   },
   {
     title: "Premium Rusks starting from",
     priceText: "R 100",
     image: "./images/rusks_bucket_new_1780975098836.png",
-    alt: "Premium Rusks starting from R100"
+    alt: "Premium Rusks starting from R100",
+    itemId: "rusks-bucket",
+    size: "5L"
   },
   {
     title: "Crunchy Biscuits starting from",
     priceText: "R 165",
     image: "./images/biscuits_bucket_new_1780975085698.png",
-    alt: "Crunchy Biscuits starting from R165"
+    alt: "Crunchy Biscuits starting from R165",
+    itemId: "biscuits-bucket",
+    size: "5L"
   }
 ];
 
-export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats, onStartPartnership, onStartKidsParty }: HeroProps) {
+export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTreats, onStartPartnership, onStartKidsParty, onSelectProduct }: HeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -153,19 +162,28 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="relative w-full max-w-[450px] aspect-[4/3] sm:aspect-square flex justify-center items-center"
+                onClick={() => onSelectProduct?.(slide.itemId, slide.size)}
+                className="relative w-full max-w-[450px] aspect-[4/3] sm:aspect-square flex justify-center items-center cursor-pointer group"
+                title={`Configure ${slide.title} now`}
               >
-                <div className="relative w-full h-full border border-gold bg-white p-2 shadow-lg overflow-hidden group">
+                <div className="relative w-full h-full border border-gold bg-white p-2 shadow-lg overflow-hidden transition-all duration-300 group-hover:border-amber-500 group-hover:shadow-2xl">
                   {/* Core generated image */}
                   <img 
                     src={slide.image} 
                     alt={slide.alt} 
                     referrerPolicy="no-referrer"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-750 group-hover:scale-[1.03]"
                   />
 
+                  {/* Interactive Pulse / Hover Overlay */}
+                  <div className="absolute inset-0 bg-stone-950/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4 text-center z-10">
+                    <span className="bg-white/95 backdrop-blur-xs text-stone-950 px-4 py-2.5 border-2 border-[#D4AF37] text-[10px] font-black uppercase tracking-widest rounded-lg shadow-xl hover:scale-105 transition-transform duration-200">
+                      Customize {slide.size || "Scone"} Bucket →
+                    </span>
+                  </div>
+
                   {/* Decorative Macarons Overlay tag with matching colors */}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white border border-gold p-3.5 shadow-md">
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-white/95 backdrop-blur-xs border border-gold p-3.5 shadow-md z-20">
                     <div className="flex items-center space-x-3">
                       {/* Two small visual circles matching the logo colors directly */}
                       <div className="flex -space-x-2">
@@ -184,7 +202,7 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
                 </div>
 
                 {/* Float Badge */}
-                <div className="absolute -top-3 -left-3 bg-black border border-gold text-white p-4 shadow-lg flex flex-col items-center justify-center min-w-[140px] z-20">
+                <div className="absolute -top-3 -left-3 bg-black border border-gold text-white p-4 shadow-lg flex flex-col items-center justify-center min-w-[140px] z-30 transition-all duration-300 group-hover:border-amber-400 group-hover:scale-105">
                   <span className="serif text-3xl italic font-normal text-gold block">{slide.priceText}</span>
                   <span className="text-[9px] uppercase tracking-[0.2em] text-stone-400 font-extrabold block text-center mt-1 leading-tight max-w-[120px]">{slide.title}</span>
                 </div>
