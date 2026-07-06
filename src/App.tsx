@@ -67,10 +67,7 @@ const DEFAULT_SETTINGS = {
     { id: "flv-aniseed-rusk", name: "Spiced Sweet Aniseed Rusk", category: "Rusks", isActive: true },
     { id: "flv-crunch-rusk", name: "Wholewheat Crunchy Rusk", category: "Rusks", isActive: true }
   ],
-  coupons: [
-    { id: "cpn-nems20", code: "NEMS20", discount: 20, expiresAt: "2026-12-31", isActive: true },
-    { id: "cpn-special", code: "SPECIAL15", discount: 15, expiresAt: "2026-08-31", isActive: true }
-  ],
+  coupons: [],
   contact: {
     email: "orders@nemsbakery.co.za",
     cellphone: "+27 82 555 4321",

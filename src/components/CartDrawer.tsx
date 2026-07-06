@@ -268,30 +268,12 @@ export default function CartDrawer({
       return;
     }
 
-    if (uppercaseCode === "NEMS20") {
-      setAppliedCoupon({ code: "NEMS20", type: "percentage", value: 20 });
-      setCouponSuccess("NEMS20 applied! Enjoy 20% off your entire bag!");
-      setCouponError(null);
-    } else if (uppercaseCode === "TREAT50") {
-      setAppliedCoupon({ code: "TREAT50", type: "amount", value: 50 });
-      setCouponSuccess("TREAT50 applied! R50.00 cash voucher holds!");
-      setCouponError(null);
-    } else if (uppercaseCode === "LOBOLA15") {
-      setAppliedCoupon({ code: "LOBOLA15", type: "percentage", value: 15 });
-      setCouponSuccess("LOBOLA15 applied! Scone celebrations active with 15% off!");
-      setCouponError(null);
-    } else if (uppercaseCode === "BREAD100") {
-      const subtotalVal = smallSubtotal + normalSubtotal;
-      if (subtotalVal < 500) {
-        setCouponError("BREAD100 requires a minimum order subtotal of R 500.00");
-        setCouponSuccess(null);
-      } else {
-        setAppliedCoupon({ code: "BREAD100", type: "amount", value: 100 });
-        setCouponSuccess("BREAD100 applied! R100.00 cash voucher subtracted!");
-        setCouponError(null);
-      }
+    const oldCoupons = ["NEMS20", "TREAT50", "LOBOLA15", "BREAD100", "SPECIAL15"];
+    if (oldCoupons.includes(uppercaseCode)) {
+      setCouponError(`The coupon code "${uppercaseCode}" has expired or is invalid.`);
+      setCouponSuccess(null);
     } else {
-      setCouponError("Unknown coupon code. Please verify.");
+      setCouponError("Unknown or invalid coupon code.");
       setCouponSuccess(null);
     }
   };
