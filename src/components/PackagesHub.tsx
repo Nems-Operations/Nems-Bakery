@@ -349,7 +349,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./assets/bakery_buckets_hero_1783018519419.jpg" 
+                  src="./images/bakery_buckets_hero_1783018519419.jpg" 
                   alt="Bakery Buckets Traditional Delicacies with tea and scones"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
@@ -441,7 +441,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="https://images.unsplash.com/photo-1544982503-9f984c14501a?auto=format&fit=crop&q=80&w=800" 
+                  src="./images/custom_gift_packages.jpg" 
                   alt="Bespoke Bakery Gift Box"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
@@ -487,7 +487,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./assets/kids_party_packs_1783018532665.jpg" 
+                  src="./images/kids_party_packs_1783018532665.jpg" 
                   alt="Spiderman party packs and princess cupcake box"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
@@ -533,7 +533,7 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./assets/decorated_venue_place_1783019276088.jpg" 
+                  src="./images/decorated_venue_place_1783019276088.jpg" 
                   alt="Decorated Venue Reception Place"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
