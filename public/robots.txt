@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nemsbakery.co.za/sitemap.xml
+Sitemap: https://nemsbakery.co.za/sitemaps.xml

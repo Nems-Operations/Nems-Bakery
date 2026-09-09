@@ -1,0 +1,6 @@
+{
+  "name": "Nems Bakery and Catering Co.",
+  "description": "Premium South African bakery and catering website featuring an interactive 2L-20L party bucket ordering system, custom package builder, and event booking showcase in gold and white brand colors.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

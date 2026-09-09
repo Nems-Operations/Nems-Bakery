@@ -1,0 +1,804 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useEffect, useMemo } from "react";
+import { MenuItem, Category, CartItem } from "../types";
+import { Coffee, Sparkles, ShoppingBag, Check, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
+
+interface DailyTreatsProps {
+  onAddToBag: (
+    item: MenuItem,
+    quantity: number,
+    selectedSize?: any,
+    specialInstructions?: string,
+    selectedFlavor?: string
+  ) => void;
+  cartItems: CartItem[];
+  onUpdateQty: (id: string, size: string | undefined, qty: number, flavor?: string) => void;
+  onRemoveItem: (id: string, size: string | undefined, flavor?: string) => void;
+  onOpenCart: () => void;
+  siteSettings?: any;
+}
+
+// 1. Defining the premium retail/daily small treats
+const SMALL_TREATS_ITEMS: MenuItem[] = [
+  {
+    id: "retail-scone",
+    name: "Individual Traditional Buttermilk Scone",
+    category: Category.DESSERTS,
+    description: "Our signature flaky buttermilk high-crown scone. Served fresh with a companion portion of whipped farm cream and sweet strawberry jam.",
+    image: "./images/buttermilk_scones.png",
+    isBucket: false,
+    basePrice: 15,
+    badge: "Tea Time Favourite"
+  },
+  {
+    id: "retail-rusk-classic",
+    name: "Traditional Classic Buttermilk Rusk",
+    category: Category.DESSERTS,
+    description: "Expertly double-baked pure buttermilk rusk. Perfectly block-cut, crunchy, dry, and ready for hot coffee or tea dunking.",
+    image: "./images/rusks_pack.png",
+    isBucket: false,
+    basePrice: 20,
+    badge: "Dunking Essential"
+  },
+  {
+    id: "retail-biscuit-cherry",
+    name: "Piped Butter Biscuit with Cherry",
+    category: Category.BAKERY_BUCKETS,
+    description: "Traditional melt-in-the-mouth pure butter cookie, piped into a beautiful swirl and finished with a sweet glazed red cherry dome.",
+    image: "./images/biscuits_assorted.png",
+    isBucket: false,
+    basePrice: 10,
+    badge: "Heritage Swirl",
+    isComingSoon: true
+  },
+  {
+    id: "retail-biscuit-chocolate",
+    name: "Dipped Belgian Chocolate Butter Biscuit",
+    category: Category.BAKERY_BUCKETS,
+    description: "Our classic piped shortbread biscuit, generously hand-dipped in rich, melted premium Belgian dark chocolate.",
+    image: "./images/biscuits_assorted.png",
+    isBucket: false,
+    basePrice: 12,
+    badge: "Choc Indulgence",
+    isComingSoon: true
+  },
+  {
+    id: "retail-macaron-single",
+    name: "Nems Signature Single Pastel Macaron",
+    category: Category.DESSERTS,
+    description: "A single piece of our award-winning delicate almond macaron with choice white chocolate and crushed strawberry cream filling.",
+    image: "./images/gourmet_macarons.png",
+    isBucket: false,
+    basePrice: 18,
+    badge: "Logo Signature",
+    isComingSoon: true
+  }
+];
+
+// Flavor options for retail goods mapping
+const RETAIL_FLAVORS_OPTIONS: Record<string, string[]> = {
+  "retail-scone": ["Vanilla"],
+  "retail-rusk-classic": ["Buttermilk"],
+  "retail-biscuit-cherry": ["Cherry Almond Butter", "Lemon Glazed Cherry", "Vanilla Berry Twist"],
+  "retail-biscuit-chocolate": ["Belgian Choc Dipped", "Double Chocolate Mint", "Double Orange Cocoa"],
+  "retail-macaron-single": ["Strawberry Cream", "Velvet Vanilla", "Lemon Meringue", "Belgian Dark Coco", "Salted Butter Caramel"]
+};
+
+// Premium pricing maps for Muffins & Cupcakes
+const MUFFIN_PRICES: Record<number, number> = {
+  6: 20.00,
+  12: 20.00,
+  24: 20.00
+};
+
+const CUPCAKE_PRICES: Record<number, number> = {
+  6: 36.00,
+  12: 72.00,
+  24: 144.00
+};
+
+// Common flavors lists
+const MUFFIN_FLAVORS = [
+  "Chocolate", 
+  "Choc-Mint", 
+  "Vanilla", 
+  "Cappuccino"
+];
+
+const CUPCAKE_FLAVORS = [
+  "Vanilla Velvet", 
+  "Rich Chocolate Fudge", 
+  "Red Velvet Cream Cheese", 
+  "Salted Caramel Swirl", 
+  "Strawberry Milkshake Icing"
+];
+
+export default function DailyTreats({
+  onAddToBag,
+  cartItems,
+  onUpdateQty,
+  onRemoveItem,
+  onOpenCart,
+  siteSettings
+}: DailyTreatsProps) {
+  // Active Tab for Muffins & Cupcakes sliding window
+  const [activeTab, setActiveTab] = useState<"muffins" | "cupcakes">("muffins");
+
+  // Selection states for Custom Muffin Pack builder
+  const [selectedMuffinQty, setSelectedMuffinQty] = useState<number>(1);
+  const [selectedMuffinFlavor, setSelectedMuffinFlavor] = useState<string>("Chocolate");
+
+  // Selection states for Custom Cupcake Pack builder
+  const [selectedCupcakePack, setSelectedCupcakePack] = useState<number>(6);
+  const [selectedCupcakeFlavor, setSelectedCupcakeFlavor] = useState<string>("Vanilla Velvet");
+
+  // Chosen flavors per standard retail item
+  const [selectedItemFlavors, setSelectedItemFlavors] = useState<Record<string, string>>({
+    "retail-scone": "Vanilla",
+    "retail-rusk-classic": "Buttermilk",
+    "retail-biscuit-cherry": "Cherry Almond Butter",
+    "retail-biscuit-chocolate": "Belgian Choc Dipped",
+    "retail-macaron-single": "Strawberry Cream",
+  });
+
+  const isFlavorActive = (itemId: string, flavorName: string) => {
+    return true;
+  };
+
+  const [specialInstructions, setSpecialInstructions] = useState("");
+  const [orderPlacedFeedback, setOrderPlacedFeedback] = useState(false);
+  const [addedFeedbackMessage, setAddedFeedbackMessage] = useState("");
+
+  const dynamicTreats = SMALL_TREATS_ITEMS;
+
+  const getQtyInCart = (itemId: string) => {
+    const flavor = selectedItemFlavors[itemId] || "Original";
+    const found = cartItems.find(
+      (ci) => ci.menuItem.id === itemId && ci.selectedFlavor === flavor
+    );
+    return found ? found.quantity : 0;
+  };
+
+  const updateQuantity = (itemId: string, delta: number) => {
+    const item = dynamicTreats.find((it) => it.id === itemId);
+    if (!item) return;
+
+    const dynamicStock = 50;
+    if (dynamicStock <= 0 && delta > 0) {
+      return;
+    }
+
+    const flavor = selectedItemFlavors[itemId] || "Original";
+    const existing = cartItems.find(
+      (ci) => ci.menuItem.id === itemId && ci.selectedFlavor === flavor
+    );
+    const currentQty = existing ? existing.quantity : 0;
+    const nextQty = Math.max(0, currentQty + delta);
+
+    if (nextQty === 0) {
+      if (existing) {
+        onRemoveItem(itemId, undefined, flavor);
+      }
+    } else {
+      if (existing) {
+        onUpdateQty(itemId, undefined, nextQty, flavor);
+      } else {
+        onAddToBag(item, nextQty, undefined, undefined, flavor);
+      }
+    }
+  };
+
+  const handleFlavorChange = (itemId: string, flavor: string) => {
+    setSelectedItemFlavors((prev) => ({
+      ...prev,
+      [itemId]: flavor
+    }));
+  };
+
+  // Synchronize hash changes for deep linking directly to item sections and adjusting tab selection
+  useEffect(() => {
+    const handleScrollAndSync = () => {
+      const hash = window.location.hash;
+      if (!hash) return;
+      const targetId = hash.replace("#", "");
+
+      if (targetId === "daily-muffin") {
+        setActiveTab("muffins");
+        setTimeout(() => {
+          const el = document.getElementById("daily-muffin-section");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 300);
+      } else if (targetId === "daily-cupcake") {
+        setActiveTab("cupcakes");
+        setTimeout(() => {
+          const el = document.getElementById("daily-cupcake-section");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 300);
+      } else {
+        const el = document.getElementById(targetId);
+        if (el) {
+          setTimeout(() => {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Add a temporary subtle flash highlight effect to the target item
+            el.classList.add("ring-4", "ring-gold", "ring-offset-2");
+            setTimeout(() => {
+              el.classList.remove("ring-4", "ring-gold", "ring-offset-2");
+            }, 2500);
+          }, 300);
+        }
+      }
+    };
+
+    // Run slightly delayed to allow mount animation to complete
+    const timer = setTimeout(handleScrollAndSync, 350);
+    window.addEventListener("hashchange", handleScrollAndSync);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("hashchange", handleScrollAndSync);
+    };
+  }, []);
+
+  // Click handler to register Muffin or Cupcake pack directly into local basket
+  const addCustomPack = (type: "muffin" | "cupcake") => {
+    if (type === "muffin") {
+      const unitPrice = 20.00;
+      const price = unitPrice * selectedMuffinQty;
+      const flavor = selectedMuffinFlavor;
+      
+      const newMuffin: MenuItem = {
+        id: "daily-muffin-individual",
+        name: "Individual Gourmet Muffin",
+        category: Category.DESSERTS,
+        description: "Daily homemade oven-fresh muffin, hand-mixed using farm ingredients.",
+        image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600",
+        isBucket: false,
+        basePrice: unitPrice,
+        badge: "Oven Hot"
+      };
+
+      onAddToBag(newMuffin, selectedMuffinQty, undefined, specialInstructions, flavor);
+      setAddedFeedbackMessage(`Added ${selectedMuffinQty} Individual Gourmet Muffin${selectedMuffinQty > 1 ? "s" : ""} (${flavor}) for R ${price.toFixed(2)} to bag!`);
+    } else {
+      const price = CUPCAKE_PRICES[selectedCupcakePack];
+      const flavor = selectedCupcakeFlavor;
+
+      const newCupcakePack: MenuItem = {
+        id: `daily-cupcake-${selectedCupcakePack}`,
+        name: `Sweet Cupcake Pack (${selectedCupcakePack} Pcs)`,
+        category: Category.DESSERTS,
+        description: `Light fluffy sponge cakes decorated with delicious silky whipped frosting swirl. Pack size: ${selectedCupcakePack}.`,
+        image: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&q=80&w=600",
+        isBucket: false,
+        basePrice: price,
+        badge: "Lux Glazed"
+      };
+
+      onAddToBag(newCupcakePack, 1, undefined, specialInstructions, flavor);
+      setAddedFeedbackMessage(`Added ${selectedCupcakePack} Cupcake Pack (${flavor}) for R ${price.toFixed(2)} to bag!`);
+    }
+
+    setTimeout(() => {
+      setAddedFeedbackMessage("");
+    }, 4000);
+  };
+
+  // Remove a custom pack
+  const deleteCustomItem = (itemId: string, flavor: string) => {
+    onRemoveItem(itemId, undefined, flavor);
+  };
+
+  const selectedItems = cartItems.filter(item => 
+    item.menuItem.id.startsWith("retail-") || 
+    item.menuItem.id.startsWith("daily-muffin-") || 
+    item.menuItem.id.startsWith("daily-cupcake-")
+  );
+
+  // Running total calculation
+  const runningTotal = selectedItems.reduce((acc, current) => {
+    return acc + current.unitPrice * current.quantity;
+  }, 0);
+
+  return (
+    <section id="daily-treats" className="scroll-mt-20 bg-stone-50 py-16 sm:py-24 border-b border-gold">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
+        {/* 1. Interactive Sliding Custom Segment (Muffins vs Cupcakes) */}
+        <div className="mb-14 max-w-4xl mx-auto">
+          
+          {/* Sub-toggle buttons to switch between Muffins & Cupcakes */}
+          <div className="flex items-center justify-center space-x-3 mb-6">
+            <button
+              onClick={() => setActiveTab("muffins")}
+              className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider border rounded-xl transition-all ${
+                activeTab === "muffins"
+                  ? "bg-gold text-white border-gold shadow-sm"
+                  : "bg-white text-stone-600 border-stone-200 hover:border-gold"
+              }`}
+            >
+              🧁 Daily Gourmet Muffins
+            </button>
+            <button
+              onClick={() => setActiveTab("cupcakes")}
+              className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider border rounded-xl transition-all ${
+                activeTab === "cupcakes"
+                  ? "bg-red-600 text-white border-red-600 shadow-sm"
+                  : "bg-white text-stone-600 border-stone-200 hover:border-red-500"
+              }`}
+            >
+              🧁 Daily Cupcakes (Sold Out)
+            </button>
+          </div>
+          
+          {/* Sliding container housing Muffins (Left/0%) and Cupcakes (Right/-50%) */}
+          <div className="bg-white border-2 border-gold rounded-2xl overflow-hidden shadow-md">
+            <div 
+              className="flex w-[200%] transition-transform duration-500 ease-out"
+              style={{ transform: activeTab === "muffins" ? "translateX(0%)" : "translateX(-50%)" }}
+            >
+              
+              {/* PAGE A: MUFFINS Customizer */}
+              <div id="daily-muffin-section" className="scroll-mt-24 w-1/2 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-[#FDFBF7]">
+                <div className="space-y-4">
+                  <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-stone-100 border border-gold/40 relative">
+                    <img
+                      src="https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600"
+                      alt="Artisanal Soft Muffins"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-3 left-3 bg-[#D4AF37] text-white px-2.5 py-1 text-[8.5px] font-extrabold uppercase tracking-widest rounded-sm">
+                      Muffins: R 20.00
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("cupcakes")}
+                    className="w-full py-2.5 px-4 bg-stone-100 border border-stone-300 hover:border-gold hover:bg-gold/10 text-stone-700 hover:text-stone-950 text-[10.5px] font-bold uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all duration-200"
+                  >
+                    <span>Choose Cupcakes instead</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-gold" />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1.5">Step 1: Choose Muffin Flavor</span>
+                    <select
+                      value={selectedMuffinFlavor}
+                      onChange={(e) => setSelectedMuffinFlavor(e.target.value)}
+                      className="w-full text-xs border border-stone-200 rounded-lg px-3 py-3 focus:outline-none focus:border-gold bg-[#FCFAF7] text-stone-900 font-semibold"
+                    >
+                      {MUFFIN_FLAVORS.map((flavor) => (
+                        <option key={flavor} value={flavor}>
+                          🧁 {flavor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">Step 2: Choose Quantity</span>
+                    <div className="flex items-center border border-stone-200 bg-neutral-50 rounded-lg overflow-hidden h-11 w-32">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMuffinQty(prev => Math.max(1, prev - 1))}
+                        className="px-3.5 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-lg w-10 text-center"
+                        aria-label="Decrease Quantity"
+                      >
+                        -
+                      </button>
+                      <span className="flex-1 text-xs font-bold text-stone-950 font-mono text-center">
+                        {selectedMuffinQty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMuffinQty(prev => prev + 1)}
+                        className="px-3.5 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-lg w-10 text-center"
+                        aria-label="Increase Quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-stone-100/80 p-4 border border-stone-200/60 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-stone-500 font-bold block">Grand Price Summary</span>
+                      <strong className="text-xl font-bold font-mono text-stone-950">
+                        R {(20.00 * selectedMuffinQty).toFixed(2)}
+                      </strong>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addCustomPack("muffin")}
+                      className="bg-gold hover:bg-stone-950 text-white font-extrabold text-xs uppercase tracking-widest py-3 px-5 transition-all rounded-lg flex items-center space-x-2"
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                      <span>Add Muffin</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* PAGE B: CUPCAKES PACK Customizer (Out of Stock / Sold Out) */}
+              <div id="daily-cupcake-section" className="scroll-mt-24 w-1/2 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-[#FCFAFA] relative">
+                <div className="space-y-4">
+                  <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-stone-100 border border-red-500/40 relative grayscale-[60%]">
+                    <img
+                      src="https://images.unsplash.com/photo-1576618144449-cd747ffb7ded?auto=format&fit=crop&q=80&w=600"
+                      alt="Artisanal Soft Cupcakes - Sold Out"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 text-[8.5px] font-black uppercase tracking-widest rounded-sm shadow-sm">
+                      SOLD OUT
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("muffins")}
+                    className="w-full py-2.5 px-4 bg-stone-100 border border-stone-300 hover:border-gold hover:bg-gold/10 text-stone-700 hover:text-stone-950 text-[10.5px] font-bold uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all duration-200"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5 text-gold" />
+                    <span>Choose Muffins instead</span>
+                  </button>
+                </div>
+
+                <div className="space-y-6 opacity-60">
+                  <div>
+                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">Step 1: Choose Cupcake Pack Size</span>
+                    <div className="grid grid-cols-3 gap-2 pointer-events-none">
+                      {[6, 12, 24].map((size) => (
+                        <button
+                          key={`cupcake-${size}`}
+                          type="button"
+                          disabled={true}
+                          className={`py-3 px-2 border rounded-lg text-center transition-all bg-stone-100 text-stone-400 border-stone-200`}
+                        >
+                          <span className="block text-xs font-black">{size} Pack</span>
+                          <span className="block font-mono text-[10px] mt-0.5 opacity-80">R {CUPCAKE_PRICES[size].toFixed(2)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1.5">Step 2: Choose Cupcake Flavor</span>
+                    <select
+                      disabled={true}
+                      value={selectedCupcakeFlavor}
+                      className="w-full text-xs border border-stone-200 rounded-lg px-3 py-3 bg-[#FCFAF7] text-stone-400 font-semibold cursor-not-allowed"
+                    >
+                      {CUPCAKE_FLAVORS.map((flavor) => (
+                        <option key={flavor} value={flavor}>
+                          🧁 {flavor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="bg-stone-150 p-4 border border-stone-250 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-wider text-stone-500 font-bold block">Grand Price Summary</span>
+                      <strong className="text-xl font-bold font-mono text-stone-950">
+                        R {CUPCAKE_PRICES[selectedCupcakePack].toFixed(2)}
+                      </strong>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={true}
+                      className="bg-stone-300 text-stone-500 font-extrabold text-xs uppercase tracking-widest py-3 px-5 transition-all rounded-lg flex items-center space-x-2 border border-stone-400 cursor-not-allowed"
+                    >
+                      <span>Sold Out</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Feedback banner alert for pack builder */}
+          {addedFeedbackMessage && (
+            <div className="mt-4 bg-emerald-50 border border-emerald-350 p-4 rounded-xl text-xs text-emerald-900 font-semibold stroke-[2.5] flex items-center justify-between animate-fade-in shadow-xs">
+              <span className="flex items-center space-x-2">
+                <Check className="h-4 w-4 text-emerald-600 stroke-[3]" />
+                <span>{addedFeedbackMessage}</span>
+              </span>
+              <span className="text-[9px] uppercase bg-stone-900 text-white rounded px-2.5 py-1">View in Basket right →</span>
+            </div>
+          )}
+
+        </div>
+
+        {/* 2. Layout Grid with Products & Sticky Order Summary Sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+          
+          {/* Detailed Item Lists Grid (Standard Goods) */}
+          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {dynamicTreats.map((item) => {
+              const qtySelected = getQtyInCart(item.id);
+              const currentFlavor = selectedItemFlavors[item.id];
+              const possibleFlavors = RETAIL_FLAVORS_OPTIONS[item.id] || [];
+
+              const dynamicStock = 50;
+              const isOutOfStock = dynamicStock <= 0;
+
+              return (
+                <div 
+                  key={item.id} 
+                  id={item.id}
+                  className={`scroll-mt-28 flex flex-col justify-between bg-white border border-gold hover:border-gold/80 transition-all duration-200 overflow-hidden shadow-xs relative rounded-xl ${
+                    isOutOfStock ? "grayscale-[40%] opacity-80" : ""
+                  }`}
+                >
+                  {/* High Quality Image Setup */}
+                  <div className="relative aspect-[16/10] overflow-hidden bg-stone-100 border-b border-gold/40">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
+                    />
+                    {isOutOfStock && (
+                      <span className="absolute top-0 right-0 bg-red-600 text-white px-2.5 py-1 text-[8.5px] font-black uppercase tracking-[0.1em] z-20 shadow-sm">
+                        OUT OF STOCK
+                      </span>
+                    )}
+                    {item.badge && !item.isComingSoon && (
+                      <span className="absolute top-0 left-0 bg-[#D4AF37] text-white px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-widest">
+                        {item.badge}
+                      </span>
+                    )}
+                    
+                    {/* Visual indicator of what's added */}
+                    {qtySelected > 0 && !item.isComingSoon && (
+                      <div className="absolute top-2 right-2 bg-black text-white px-2.5 py-1 text-xs font-black tracking-wider shadow-md rounded-xs">
+                        Selected: {qtySelected}
+                      </div>
+                    )}
+...
+                    {/* Coming Soon overlay with brand stamp */}
+                    {item.isComingSoon && (
+                      <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 z-10 select-none coming-soon-banner">
+                        <div className="mb-1.5 h-10 w-10 rounded-full border border-gold bg-white p-1 flex items-center justify-center shadow-md animate-pulse">
+                          <img src="./images/logo.png" alt="Nems Logo" className="h-[90%] w-[90%] object-contain" />
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-stone-100 text-stone-950 border border-gold px-2.5 py-1.5 shadow-sm">
+                          Coming Soon
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body Content */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-start">
+                        <h3 className="serif text-lg font-bold text-stone-900 leading-tight">
+                          {item.name}
+                        </h3>
+                        {!item.isComingSoon && (
+                          <div className="text-right shrink-0 ml-2">
+                            <span className="text-base font-bold text-[#D4AF37] block font-mono">
+                              R {item.basePrice.toFixed(2)}
+                            </span>
+                            <span className="text-[9.5px] text-stone-500 font-medium block mt-1">
+                              {dynamicStock} remaining for today
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-stone-500 leading-relaxed line-clamp-2">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    {item.isComingSoon ? (
+                      <div className="bg-stone-50 p-3.5 border border-dashed border-stone-200 text-center rounded-xl space-y-1.5">
+                        <span className="text-[9.5px] font-black text-[#C5A028] block uppercase tracking-wider">Not Available</span>
+                        <p className="text-[10px] text-stone-400">Our bakers are currently upgrading our small pastry line. Grab biscuit buckets or daily custom muffin boxes instead!</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Flavors Select section */}
+                        {possibleFlavors.length > 0 && (
+                          <div className="space-y-1 bg-stone-50 p-2 border border-stone-150 rounded-lg">
+                            <label className="text-[8.5px] uppercase tracking-wider text-stone-500 font-bold block">
+                              Select Common Flavor:
+                            </label>
+                            <select
+                              value={currentFlavor}
+                              onChange={(e) => handleFlavorChange(item.id, e.target.value)}
+                              className="w-full text-[11px] border border-stone-200 bg-white rounded px-2 py-1 focus:outline-none focus:border-gold py-1.5 font-medium text-stone-800"
+                            >
+                              {possibleFlavors.map((flv) => {
+                                const isActive = isFlavorActive(item.id, flv);
+                                return (
+                                  <option 
+                                    key={flv} 
+                                    value={flv}
+                                    disabled={!isActive}
+                                    style={{ opacity: isActive ? 1 : 0.4 }}
+                                  >
+                                    ✨ {flv}{!isActive ? " (Unavailable)" : ""}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Quantity Selector Module with +- Buttons */}
+                        <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+                          {isOutOfStock ? (
+                            <span className="text-[10px] uppercase font-black tracking-wider text-red-600 block py-1">
+                              Temporarily Out Of Stock
+                            </span>
+                          ) : (
+                            <>
+                              <span className="text-[9px] uppercase tracking-wider text-stone-400 font-bold">
+                                Adjust Quantity:
+                              </span>
+                              <div className="flex items-center border border-stone-200 bg-neutral-50 rounded-xs overflow-hidden h-9">
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, -1)}
+                                  className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
+                                  aria-label="Decrease"
+                                >
+                                  -
+                                </button>
+                                <span className="px-3.5 text-xs font-bold text-stone-950 font-mono w-8 text-center">
+                                  {qtySelected}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(item.id, 1)}
+                                  className="px-3 text-stone-500 hover:bg-stone-200 hover:text-stone-900 transition-colors font-extrabold text-sm curser-pointer"
+                                  aria-label="Increase"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Sticky Order Summary Card */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24">
+            
+            {/* Feedback alert banner */}
+            {orderPlacedFeedback && (
+              <div className="mb-4 bg-[#A6E3E9]/80 border border-[#D4AF37] p-4 text-xs text-stone-900 font-medium stroke-[2.5] flex items-start space-x-2.5 shadow-md rounded-xl">
+                <Check className="h-4.5 w-4.5 text-gold shrink-0 stroke-[3]" />
+                <div>
+                  <strong className="font-bold block uppercase tracking-wider">Treats Added to Bag!</strong>
+                  Your daily retail collection has been merged into your main order folder. Let's inspect the bag to checkout!
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white border-2 border-gold p-6 shadow-md space-y-6 rounded-2xl">
+              <div className="border-b border-gold/30 pb-4">
+                <h3 className="serif text-xl font-bold uppercase tracking-tight text-stone-900 flex items-center space-x-2">
+                  <Coffee className="h-5 w-5 text-gold stroke-[2]" />
+                  <span>Small Order Basket</span>
+                </h3>
+                <p className="text-[10px] text-stone-400 uppercase tracking-widest mt-1">
+                  Individual treats running total
+                </p>
+              </div>
+
+              {/* Items List inside Summary Card */}
+              {selectedItems.length === 0 ? (
+                <div className="py-8 text-center text-stone-400 space-y-3">
+                  <span className="text-3xl block">🧁</span>
+                  <p className="text-xs text-stone-500 font-normal leading-relaxed max-w-xs mx-auto">
+                    Your small order basket is empty. Press <strong className="font-bold text-stone-800">+</strong> on any gourmet treat above, or assemble custom muffin/cupcake packs to build your collection!
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[260px] overflow-y-auto pr-1">
+                  {selectedItems.map((selected) => (
+                    <div key={`${selected.menuItem.id}-${selected.selectedFlavor}`} className="flex justify-between items-start text-xs border-b border-stone-100 pb-2.5 last:border-0 last:pb-0">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="flex items-center space-x-1.5 flex-wrap">
+                          <span className="font-black font-mono text-gold">{selected.quantity}x</span>
+                          <span className="font-semibold text-stone-850 truncate max-w-[170px]">{selected.menuItem.name}</span>
+                        </div>
+                        <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[9px] bg-amber-50 text-[#C5A028] border border-gold/15 font-bold font-sans">
+                          {selected.selectedFlavor}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <span className="font-bold font-mono text-stone-900 text-xs">
+                          R {(selected.unitPrice * selected.quantity).toFixed(2)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => deleteCustomItem(selected.menuItem.id, selected.selectedFlavor)}
+                          className="text-stone-300 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Remove Item"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Special instructions in package wrapper */}
+              <div className="space-y-1.5 pt-4 border-t border-stone-100">
+                <label className="text-[9px] uppercase tracking-widest text-[#C5A028] font-bold block">
+                  Bespoke Notes (e.g. ribbon color, allergen markers)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Separate the biscuits with individual wrappers..."
+                  value={specialInstructions}
+                  onChange={(e) => setSpecialInstructions(e.target.value)}
+                  className="w-full text-xs border border-stone-200 p-2.5 focus:outline-none focus:border-gold placeholder-stone-400 text-stone-950 bg-neutral-50 resize-none rounded-lg"
+                />
+              </div>
+
+              {/* Total Summary Block */}
+              <div className="pt-4 border-t border-gold/30 bg-stone-50 p-4 border rounded-xl">
+                <div className="flex justify-between items-baseline mb-1">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-stone-500">
+                    Est. Subtotal
+                  </span>
+                  <span className="serif text-2xl font-black text-stone-950 font-mono">
+                    R {runningTotal.toFixed(2)}
+                  </span>
+                </div>
+                <p className="text-[9px] text-[#C5A028] italic font-semibold">
+                  *Excludes South African VAT (15%) & courier fees (calculated at Checkout)
+                </p>
+              </div>
+
+              {/* Action Button */}
+              <button
+                type="button"
+                disabled={selectedItems.length === 0}
+                onClick={onOpenCart}
+                className={`w-full py-4 text-xs font-extrabold uppercase tracking-widest border transition-all flex items-center justify-center space-x-2 rounded-xl cursor-pointer ${
+                  selectedItems.length > 0
+                    ? "bg-gold border-gold text-white hover:bg-stone-950 hover:border-stone-950"
+                    : "bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed"
+                }`}
+              >
+                <>
+                  <ShoppingBag className="h-4 w-4" />
+                  <span>View Bag &amp; Checkout</span>
+                </>
+              </button>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+  );
+}
