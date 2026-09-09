@@ -348,8 +348,8 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/bakery_buckets_counter.jpg" 
-                  alt="Nems branded bakery buckets of scones, muffins, and colorful melting moments on the side of a kitchen counter with baking utensils"
+                  src="./images/bakery_buckets_provisions.jpg" 
+                  alt="Modern kitchen counter featuring transparent bakery storage buckets filled with golden South African buttermilk scones, muffins, colorful melting moment biscuits, and traditional buttermilk rusks"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                   onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.default)}
@@ -395,8 +395,8 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80" 
-                  alt="Gourmet Catering Platters"
+                  src="./images/event_catering_setup.jpg" 
+                  alt="Professional event catering setup showing long banquet tables lined with warmers, chafing dishes, and filled platters of mini savory pastries, quiches, wraps, and finger foods"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                   onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.catering)}
@@ -442,8 +442,8 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/gift_packages.jpg" 
-                  alt="Luxury Travel Box and Gift Hamper Bag with mini scones, macarons, juice, fresh fruit, and dessert pudding"
+                  src="./images/gourmet_gift_hampers.jpg" 
+                  alt="Luxury travel box and hamper arrangement displaying open craft gift boxes containing colorful macarons, cherry butter biscuits, mini scones, and preserves tied with premium ribbon"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                   onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.gift)}
@@ -489,8 +489,8 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/kids_party_packs.jpg" 
-                  alt="Spider-Man superhero and princess themed kids party gift packs"
+                  src="./images/themed_kids_party_packs.jpg" 
+                  alt="Vibrant children's party table showing custom superhero (Spider-Man) and princess-themed gift boxes lined up alongside party treats, juice boxes, mini cupcakes, and balloons"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                   onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.kids)}
