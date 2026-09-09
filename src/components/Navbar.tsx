@@ -62,12 +62,12 @@ export default function Navbar({
           className="flex cursor-pointer items-center space-x-3 group"
         >
           {/* Logo image reflecting the original branding */}
-          <div className="relative h-14 w-14 overflow-hidden rounded-full border border-gold bg-white shadow-sm transition-transform group-hover:scale-105">
+          <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-full border-2 border-gold bg-white shadow-sm transition-transform group-hover:scale-105 flex items-center justify-center">
             <img 
               src="./images/logo.png" 
               alt="Nems Bakery and Catering logo" 
               referrerPolicy="no-referrer"
-              className="h-full w-full object-contain p-0.5"
+              className="h-full w-full object-cover"
             />
           </div>
           

@@ -240,8 +240,8 @@ export default function AdminPortalModal({
         {/* Header bar */}
         <div className="bg-stone-950 text-white px-6 py-4 flex items-center justify-between border-b border-gold">
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-gold/15 p-1 border border-gold">
-              <img src="./images/logo.png" alt="logo seal" className="h-full w-full object-contain" />
+            <div className="h-10 w-10 overflow-hidden flex items-center justify-center rounded-full bg-white border border-gold shadow-sm">
+              <img src="./images/logo.png" alt="logo seal" className="h-full w-full object-cover" />
             </div>
             <div>
               <h2 className="serif text-lg font-bold uppercase tracking-wider text-white">Nems Admin Dashboard</h2>

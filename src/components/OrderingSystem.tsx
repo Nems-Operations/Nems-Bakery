@@ -258,12 +258,12 @@ export default function OrderingSystem({
                   {/* Brand Logo Sticker Overlay (outside the bucket) */}
                   {!item.isComingSoon && (
                     <div className="absolute top-3 right-3 z-10 select-none transition-transform group-hover:scale-110 duration-300">
-                      <div className="relative h-11 w-11 overflow-hidden rounded-full border border-gold bg-white p-0.5 shadow-md flex items-center justify-center">
+                      <div className="relative h-11 w-11 overflow-hidden rounded-full border border-gold bg-white shadow-md flex items-center justify-center">
                         <img 
                           src="./images/logo.png" 
                           alt="Nems Authentic Seal" 
                           referrerPolicy="no-referrer"
-                          className="h-full w-full object-contain"
+                          className="h-full w-full object-cover"
                         />
                       </div>
                     </div>
@@ -272,8 +272,8 @@ export default function OrderingSystem({
                   {/* Coming Soon overlay screen */}
                   {item.isComingSoon && (
                     <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4 z-10 coming-soon-banner">
-                      <div className="mb-2 h-12 w-12 rounded-full border border-gold bg-white p-1 flex items-center justify-center shadow-lg">
-                        <img src="./images/logo.png" alt="Nems Logo" className="h-full w-full object-contain" />
+                      <div className="mb-2 h-12 w-12 rounded-full border border-gold bg-white overflow-hidden flex items-center justify-center shadow-lg">
+                        <img src="./images/logo.png" alt="Nems Logo" className="h-full w-full object-cover" />
                       </div>
                       <span className="text-[10px] font-black uppercase tracking-[0.25em] bg-stone-100 text-stone-950 border border-gold px-3 py-1.5 shadow-md">
                         Coming Soon
