@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Sparkles, ArrowRight, ArrowLeft, ShoppingBag } from "lucide-react";
+import { handleImageError, getBakeryFallback } from "../utils/imageUtils";
 
 interface DailyTreatsPreviewProps {
   onExplore: (targetId?: string) => void;
@@ -286,6 +287,7 @@ export default function DailyTreatsPreview({ onExplore }: DailyTreatsPreviewProp
                     alt={item.name}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+                    onError={(e) => handleImageError(e, getBakeryFallback(item.id || item.name))}
                   />
                   
                   {item.badge && !item.isComingSoon && (

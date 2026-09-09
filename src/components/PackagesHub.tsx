@@ -20,6 +20,7 @@ import {
   Sparkle
 } from "lucide-react";
 import { MenuItem, Category } from "../types";
+import { handleImageError, BAKERY_FALLBACK_IMAGES } from "../utils/imageUtils";
 import CateringPackageBuilder from "./CateringPackageBuilder";
 import KidsPartyPlanner from "./KidsPartyPlanner";
 import OrderingSystem from "./OrderingSystem";
@@ -351,6 +352,7 @@ export default function PackagesHub({
                   alt="Nems branded bakery buckets of scones, muffins, and colorful melting moments on the side of a kitchen counter with baking utensils"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.default)}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-amber-600 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
@@ -397,6 +399,7 @@ export default function PackagesHub({
                   alt="Gourmet Catering Platters"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.catering)}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-stone-950/95 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border border-[#D4AF37]/30">
@@ -443,6 +446,7 @@ export default function PackagesHub({
                   alt="Luxury Travel Box and Gift Hamper Bag with mini scones, macarons, juice, fresh fruit, and dessert pudding"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.gift)}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-[#B49225] text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
@@ -489,6 +493,7 @@ export default function PackagesHub({
                   alt="Spider-Man superhero and princess themed kids party gift packs"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.kids)}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-amber-500 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">

@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Category, MenuItem, BucketSize } from "../types";
 import { MENU_ITEMS } from "../data";
 import { ShoppingBag, ChevronRight, Info, AlertCircle, Sparkles, Check } from "lucide-react";
+import { handleImageError, handleLogoError, getBakeryFallback } from "../utils/imageUtils";
 
 interface OrderingSystemProps {
   onAddToBag: (
@@ -243,6 +244,7 @@ export default function OrderingSystem({
                     alt={item.name} 
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => handleImageError(e, getBakeryFallback(item.id || item.name))}
                   />
                   {isOutOfStock && (
                     <span className="absolute top-0 right-0 bg-red-600 text-white px-3 py-1.5 text-[8.5px] font-black uppercase tracking-[0.1em] border-l border-b border-gold z-20 shadow-sm">
@@ -264,6 +266,7 @@ export default function OrderingSystem({
                           alt="Nems Authentic Seal" 
                           referrerPolicy="no-referrer"
                           className="h-full w-full object-cover"
+                          onError={handleLogoError}
                         />
                       </div>
                     </div>
@@ -273,7 +276,12 @@ export default function OrderingSystem({
                   {item.isComingSoon && (
                     <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4 z-10 coming-soon-banner">
                       <div className="mb-2 h-12 w-12 rounded-full border border-gold bg-white overflow-hidden flex items-center justify-center shadow-lg">
-                        <img src="./images/logo.png" alt="Nems Logo" className="h-full w-full object-cover" />
+                        <img 
+                          src="./images/logo.png" 
+                          alt="Nems Logo" 
+                          className="h-full w-full object-cover" 
+                          onError={handleLogoError}
+                        />
                       </div>
                       <span className="text-[10px] font-black uppercase tracking-[0.25em] bg-stone-100 text-stone-950 border border-gold px-3 py-1.5 shadow-md">
                         Coming Soon

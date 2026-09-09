@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { GALLERY_ITEMS } from "../data";
 import { Users, Tag, Award, Heart } from "lucide-react";
+import { handleImageError, getBakeryFallback } from "../utils/imageUtils";
 
 interface EventGalleryProps {
   onSelectEventTemplate: (type: "platter" | "braai" | "hightea") => void;
@@ -90,6 +91,7 @@ export default function EventGallery({ onSelectEventTemplate, isModal = false, o
                   alt={item.title} 
                   referrerPolicy="no-referrer"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  onError={(e) => handleImageError(e, getBakeryFallback(item.tag || item.title))}
                 />
                 
                 {/* Visual Label */}

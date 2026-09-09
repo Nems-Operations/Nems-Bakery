@@ -4,6 +4,7 @@
  */
 
 import { Phone, Mail, MapPin, Clock, ShieldCheck, Heart } from "lucide-react";
+import { handleLogoError } from "../utils/imageUtils";
 
 interface FooterProps {
   onPartnershipClick?: () => void;
@@ -26,6 +27,7 @@ export default function Footer({ onPartnershipClick }: FooterProps) {
                   alt="Nems logo" 
                   referrerPolicy="no-referrer"
                   className="h-full w-full object-cover"
+                  onError={handleLogoError}
                 />
               </div>
               <div>

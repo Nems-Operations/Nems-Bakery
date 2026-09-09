@@ -8,6 +8,7 @@ import { CartItem } from "../types";
 import { db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { X, Trash2, ShoppingBag, Truck, CheckCircle, Clock, Copy, MessageSquare } from "lucide-react";
+import { handleImageError, getBakeryFallback } from "../utils/imageUtils";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -952,6 +953,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                                   alt={item.menuItem.name} 
                                   referrerPolicy="no-referrer"
                                   className="h-10 w-10 rounded-md object-cover shrink-0 border border-stone-100"
+                                  onError={(e) => handleImageError(e, getBakeryFallback(item.menuItem.id || item.menuItem.name))}
                                 />
                                 <div className="min-w-0">
                                   <strong className="text-xs font-semibold text-stone-900 block leading-tight truncate max-w-[160px]">
@@ -1034,6 +1036,7 @@ Expected Delivery/Collection Time: ${expectedTime}
                                   alt={item.menuItem.name} 
                                   referrerPolicy="no-referrer"
                                   className="h-10 w-10 rounded-md object-cover shrink-0 border border-stone-100"
+                                  onError={(e) => handleImageError(e, getBakeryFallback(item.menuItem.id || item.menuItem.name))}
                                 />
                                 <div className="min-w-0">
                                   <strong className="text-xs font-semibold text-stone-900 block leading-tight truncate max-w-[160px]">

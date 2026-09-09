@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { ShoppingCart, Calendar, Cake, Coffee, HelpCircle, Utensils, Cookie, Handshake } from "lucide-react";
+import { handleLogoError } from "../utils/imageUtils";
 
 interface NavbarProps {
   cartCount: number;
@@ -68,6 +69,7 @@ export default function Navbar({
               alt="Nems Bakery and Catering logo" 
               referrerPolicy="no-referrer"
               className="h-full w-full object-cover"
+              onError={handleLogoError}
             />
           </div>
           

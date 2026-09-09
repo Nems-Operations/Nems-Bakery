@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { ArrowRight, Sparkles, Truck, ShieldAlert } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { handleImageError, getBakeryFallback } from "../utils/imageUtils";
 
 interface HeroProps {
   onStartOrder: () => void;
@@ -173,6 +174,7 @@ export default function Hero({ onStartOrder, onStartCustomQuote, onStartDailyTre
                     alt={slide.alt} 
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-750 group-hover:scale-[1.03]"
+                    onError={(e) => handleImageError(e, getBakeryFallback(slide.itemId || slide.title))}
                   />
 
                   {/* Interactive Pulse / Hover Overlay */}

@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { MenuItem, Category, CartItem } from "../types";
 import { Coffee, Sparkles, ShoppingBag, Check, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
+import { handleImageError, handleLogoError, getBakeryFallback, BAKERY_FALLBACK_IMAGES } from "../utils/imageUtils";
 
 interface DailyTreatsProps {
   onAddToBag: (
@@ -353,6 +354,7 @@ export default function DailyTreats({
                       alt="Artisanal Soft Muffins"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
+                      onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.muffins)}
                     />
                     <span className="absolute top-3 left-3 bg-[#D4AF37] text-white px-2.5 py-1 text-[8.5px] font-extrabold uppercase tracking-widest rounded-sm">
                       Muffins: R 20.00
@@ -434,10 +436,11 @@ export default function DailyTreats({
                 <div className="space-y-4">
                   <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-stone-100 border border-red-500/40 relative grayscale-[60%]">
                     <img
-                      src="https://images.unsplash.com/photo-1576618144449-cd747ffb7ded?auto=format&fit=crop&q=80&w=600"
+                      src="https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&q=80&w=600"
                       alt="Artisanal Soft Cupcakes - Sold Out"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
+                      onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.cupcakes)}
                     />
                     <span className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 text-[8.5px] font-black uppercase tracking-widest rounded-sm shadow-sm">
                       SOLD OUT
@@ -549,6 +552,7 @@ export default function DailyTreats({
                       alt={item.name} 
                       referrerPolicy="no-referrer"
                       className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
+                      onError={(e) => handleImageError(e, getBakeryFallback(item.id || item.name))}
                     />
                     {isOutOfStock && (
                       <span className="absolute top-0 right-0 bg-red-600 text-white px-2.5 py-1 text-[8.5px] font-black uppercase tracking-[0.1em] z-20 shadow-sm">
@@ -567,12 +571,17 @@ export default function DailyTreats({
                         Selected: {qtySelected}
                       </div>
                     )}
-...
+
                     {/* Coming Soon overlay with brand stamp */}
                     {item.isComingSoon && (
                       <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 z-10 select-none coming-soon-banner">
                         <div className="mb-1.5 h-10 w-10 overflow-hidden rounded-full border border-gold bg-white flex items-center justify-center shadow-md animate-pulse">
-                          <img src="./images/logo.png" alt="Nems Logo" className="h-full w-full object-cover" />
+                          <img 
+                            src="./images/logo.png" 
+                            alt="Nems Logo" 
+                            className="h-full w-full object-cover" 
+                            onError={handleLogoError}
+                          />
                         </div>
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-stone-100 text-stone-950 border border-gold px-2.5 py-1.5 shadow-sm">
                           Coming Soon

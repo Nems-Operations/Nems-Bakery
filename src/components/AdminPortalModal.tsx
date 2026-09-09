@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import { X, Save, Lock, Plus, Trash2, Check, Sparkles, Tag, Eye, Info } from "lucide-react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { handleLogoError } from "../utils/imageUtils";
 
 interface AdminPortalModalProps {
   isOpen: boolean;
@@ -241,7 +242,12 @@ export default function AdminPortalModal({
         <div className="bg-stone-950 text-white px-6 py-4 flex items-center justify-between border-b border-gold">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 overflow-hidden flex items-center justify-center rounded-full bg-white border border-gold shadow-sm">
-              <img src="./images/logo.png" alt="logo seal" className="h-full w-full object-cover" />
+              <img 
+                src="./images/logo.png" 
+                alt="logo seal" 
+                className="h-full w-full object-cover" 
+                onError={handleLogoError}
+              />
             </div>
             <div>
               <h2 className="serif text-lg font-bold uppercase tracking-wider text-white">Nems Admin Dashboard</h2>
