@@ -6,7 +6,7 @@
   --font-sans: "Inter", system-ui, sans-serif;
   --color-gold: #C5A028;
   --color-gold-light: #E8D498;
-  --color-[#D4AF37]: #C5A028; /* Map previous gold style to theme gold */
+  --color-gold-accent: #C5A028;
   --color-ink: #141414;
 }
 
