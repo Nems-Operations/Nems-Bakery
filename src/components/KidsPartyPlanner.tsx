@@ -234,7 +234,7 @@ export default function KidsPartyPlanner({ onAddToBag, onBackToMenu, onOpenCart 
       name: `🎨 Custom Kids Party Kit (for ${kidsCount} Kids)`,
       category: Category.CATERING_BOXES,
       description: `Tailored children's birthday setup with custom thematic styling. Includes selected snack packs, optional centerpiece cupcake towers or character cakes.`,
-      image: "./images/kids_party_packs.jpg",
+      image: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=1200&q=80",
       isBucket: false,
       basePrice: grandTotal
     };

@@ -348,11 +348,11 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/bakery_buckets_provisions.jpg" 
-                  alt="Modern kitchen counter featuring transparent bakery storage buckets filled with golden South African buttermilk scones, muffins, colorful melting moment biscuits, and traditional buttermilk rusks"
+                  src="https://source.unsplash.com/featured/?bakery-buckets-scones-south-africa" 
+                  alt="Clear branded bakery buckets on counter filled with golden South African buttermilk scones and colorful biscuits"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.default)}
+                  onError={(e) => handleImageError(e, "https://images.unsplash.com/photo-1589367920969-ab8e050bbb04?auto=format&fit=crop&w=1200&q=80")}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-amber-600 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
@@ -395,11 +395,11 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/event_catering_setup.jpg" 
-                  alt="Professional event catering setup showing long banquet tables lined with warmers, chafing dishes, and filled platters of mini savory pastries, quiches, wraps, and finger foods"
+                  src="https://source.unsplash.com/featured/?catering-banquet-buffet-event" 
+                  alt="Professional event catering setup showing long banquet tables lined with chafing dishes, warmers, and platters of finger foods and quiches"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.catering)}
+                  onError={(e) => handleImageError(e, "https://images.unsplash.com/photo-1578474846511-04ba529f0b88?auto=format&fit=crop&w=1200&q=80")}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-stone-950/95 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border border-[#D4AF37]/30">
@@ -442,11 +442,11 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/gourmet_gift_hampers.jpg" 
-                  alt="Luxury travel box and hamper arrangement displaying open craft gift boxes containing colorful macarons, cherry butter biscuits, mini scones, and preserves tied with premium ribbon"
+                  src="https://source.unsplash.com/featured/?gift-hamper-macarons-pastries" 
+                  alt="Luxury open travel gift box hamper with tied bows featuring colorful macarons, mini scones, and preserves inside"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.gift)}
+                  onError={(e) => handleImageError(e, "https://images.unsplash.com/photo-1558326567-98ae2405596b?auto=format&fit=crop&w=1200&q=80")}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-[#B49225] text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
@@ -489,11 +489,11 @@ export default function PackagesHub({
               {/* Image Segment */}
               <div className="md:w-5/12 min-h-[220px] relative overflow-hidden bg-stone-100">
                 <img 
-                  src="./images/themed_kids_party_packs.jpg" 
-                  alt="Vibrant children's party table showing custom superhero (Spider-Man) and princess-themed gift boxes lined up alongside party treats, juice boxes, mini cupcakes, and balloons"
+                  src="https://source.unsplash.com/featured/?themed-kids-party-packs-superhero-princess" 
+                  alt="Vibrant birthday party table with superhero Spider-Man and princess-themed gift boxes, cupcakes, and party treats"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                  onError={(e) => handleImageError(e, BAKERY_FALLBACK_IMAGES.kids)}
+                  onError={(e) => handleImageError(e, "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=1200&q=80")}
                 />
                 <div className="absolute inset-0 bg-stone-900/10 pointer-events-none" />
                 <span className="absolute top-4 left-4 bg-amber-500 text-white px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg">
