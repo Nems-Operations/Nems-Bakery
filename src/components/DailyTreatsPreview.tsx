@@ -17,7 +17,7 @@ const PREVIEW_ITEMS = [
     name: "Buttermilk Scone",
     price: 15.00,
     description: "Traditional high-crown flaky scone.",
-    image: "./images/buttermilk_scones.png",
+    image: "/images/buttermilk_scones.png",
     badge: "Tea Favorite"
   },
   {
@@ -25,7 +25,7 @@ const PREVIEW_ITEMS = [
     name: "Classic Butter Rusk",
     price: 20.00,
     description: "Crunchy double-baked buttermilk dunker.",
-    image: "./images/rusks_pack.png",
+    image: "/images/rusks_pack.png",
     badge: "Coffee Dunker"
   },
   {
@@ -33,7 +33,7 @@ const PREVIEW_ITEMS = [
     name: "Gourmet Muffin",
     price: 20.00,
     description: "Freshly baked moist morning INDULGENCE.",
-    image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600",
+    image: "/images/morning_muffins.png",
     badge: "Oven Fresh"
   },
   {
@@ -49,7 +49,7 @@ const PREVIEW_ITEMS = [
     name: "Cherry Butter Biscuit",
     price: 10.00,
     description: "Traditional butter swirl with cherry dome.",
-    image: "./images/biscuits_assorted.png",
+    image: "/images/biscuits_assorted.png",
     badge: "Heritage Swirl",
     isComingSoon: true
   },
@@ -58,7 +58,7 @@ const PREVIEW_ITEMS = [
     name: "Chocolate Dipped Biscuit",
     price: 12.00,
     description: "Classic piped shortbread in Belgian dark choc.",
-    image: "./images/biscuits_assorted.png",
+    image: "/images/biscuits_assorted.png",
     badge: "Dark Decadence",
     isComingSoon: true
   },
@@ -67,7 +67,7 @@ const PREVIEW_ITEMS = [
     name: "Pastel Macaron",
     price: 18.00,
     description: "Delicate almond macaron with strawberry cream.",
-    image: "./images/gourmet_macarons.png",
+    image: "/images/gourmet_macarons.png",
     badge: "Award Winner",
     isComingSoon: true
   }

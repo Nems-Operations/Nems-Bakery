@@ -21,32 +21,32 @@ const HERO_SLIDES = [
   {
     title: "Scone Buckets From",
     priceText: "R 70",
-    image: "./images/scones_bucket_new_1780975055905.png",
-    alt: "Scones starting from R70",
+    image: "/images/scones_bucket_new_1780975055905.png",
+    alt: "Bucket of traditional golden buttermilk scones starting from R70",
     itemId: "scones-bucket",
     size: "10L" // Using 10L as requested for "10L scones straight to bucket scones sections"
   },
   {
     title: "Muffins starting from",
     priceText: "R 85",
-    image: "./images/muffins_bucket_new_1780975069955.png",
-    alt: "Muffins starting from R85",
+    image: "/images/muffins_bucket_new_1780975069955.png",
+    alt: "Bucket filled with gourmet morning muffins starting from R85",
     itemId: "muffins-bucket",
     size: "5L"
   },
   {
     title: "Premium Rusks starting from",
     priceText: "R 100",
-    image: "./images/rusks_bucket_new_1780975098836.png",
-    alt: "Premium Rusks starting from R100",
+    image: "/images/rusks_bucket_new_1780975098836.png",
+    alt: "Bucket of handmade buttermilk rusks starting from R100",
     itemId: "rusks-bucket",
     size: "5L"
   },
   {
     title: "Crunchy Biscuits starting from",
     priceText: "R 165",
-    image: "./images/biscuits_bucket_new_1780975085698.png",
-    alt: "Crunchy Biscuits starting from R165",
+    image: "/images/biscuits_bucket_new_1780975085698.png",
+    alt: "Bucket filled with freshly baked butter biscuits starting from R165",
     itemId: "biscuits-bucket",
     size: "5L"
   }

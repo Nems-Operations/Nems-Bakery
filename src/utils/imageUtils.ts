@@ -4,17 +4,16 @@ import React from "react";
  * Reliable, high-resolution Unsplash image fallbacks for bakery & catering items.
  * All URLs have been verified to return HTTP 200 OK.
  */
-export const DEFAULT_BAKERY_IMAGE = 
-  "https://images.unsplash.com/photo-1589367920969-ab8e050bbb04?auto=format&fit=crop&w=1200&q=80";
+export const DEFAULT_BAKERY_IMAGE = "/images/scones_bucket_new_1780975055905.png";
 
 export const BAKERY_FALLBACK_IMAGES = {
   default: DEFAULT_BAKERY_IMAGE,
-  scones: "https://images.unsplash.com/photo-1589367920969-ab8e050bbb04?auto=format&fit=crop&w=1200&q=80",
-  muffins: "https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=1200&q=80",
-  biscuits: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=1200&q=80",
-  rusks: "https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=1200&q=80",
-  macarons: "https://images.unsplash.com/photo-1569864358642-9d1684040f43?auto=format&fit=crop&w=1200&q=80",
-  koeksisters: "https://images.unsplash.com/photo-1527515862127-a4fc05baf7a5?auto=format&fit=crop&w=1200&q=80",
+  scones: "/images/scones_bucket_new_1780975055905.png",
+  muffins: "/images/muffins_bucket_new_1780975069955.png",
+  biscuits: "/images/biscuits_bucket_new_1780975085698.png",
+  rusks: "/images/rusks_bucket_new_1780975098836.png",
+  macarons: "/images/gourmet_macarons.png",
+  koeksisters: "/images/koeksisters.png",
   catering: "https://images.unsplash.com/photo-1578474846511-04ba529f0b88?auto=format&fit=crop&w=1200&q=80",
   cupcakes: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=1200&q=80",
   kids: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=1200&q=80",
@@ -49,7 +48,7 @@ export function getBakeryFallback(identifierOrName?: string): string {
 }
 
 /**
- * Global onError handler for HTML <img> tags to safely fallback to an Unsplash bakery image
+ * Global onError handler for HTML <img> tags to safely fallback to a bakery image
  * without entering infinite reload loops.
  */
 export function handleImageError(
@@ -58,7 +57,10 @@ export function handleImageError(
 ): void {
   const target = event.currentTarget;
   const fallback = fallbackUrl || DEFAULT_BAKERY_IMAGE;
-  if (target.src !== fallback) {
+  const resolvedFallback = typeof window !== "undefined"
+    ? new URL(fallback, window.location.origin).href
+    : fallback;
+  if (target.src !== resolvedFallback && target.src !== fallback) {
     target.onerror = null; // Prevent infinite recursion if fallback fails
     target.src = fallback;
   }

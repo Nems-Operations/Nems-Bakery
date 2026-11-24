@@ -262,7 +262,7 @@ export default function OrderingSystem({
                     <div className="absolute top-3 right-3 z-10 select-none transition-transform group-hover:scale-110 duration-300">
                       <div className="relative h-11 w-11 overflow-hidden rounded-full border border-gold bg-white shadow-md flex items-center justify-center">
                         <img 
-                          src="./images/logo.png" 
+                          src="/images/logo.png" 
                           alt="Nems Authentic Seal" 
                           referrerPolicy="no-referrer"
                           className="h-full w-full object-cover"
@@ -277,7 +277,7 @@ export default function OrderingSystem({
                     <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-4 z-10 coming-soon-banner">
                       <div className="mb-2 h-12 w-12 rounded-full border border-gold bg-white overflow-hidden flex items-center justify-center shadow-lg">
                         <img 
-                          src="./images/logo.png" 
+                          src="/images/logo.png" 
                           alt="Nems Logo" 
                           className="h-full w-full object-cover" 
                           onError={handleLogoError}

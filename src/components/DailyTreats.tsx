@@ -30,7 +30,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Individual Traditional Buttermilk Scone",
     category: Category.DESSERTS,
     description: "Our signature flaky buttermilk high-crown scone. Served fresh with a companion portion of whipped farm cream and sweet strawberry jam.",
-    image: "./images/buttermilk_scones.png",
+    image: "/images/buttermilk_scones.png",
     isBucket: false,
     basePrice: 15,
     badge: "Tea Time Favourite"
@@ -40,7 +40,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Traditional Classic Buttermilk Rusk",
     category: Category.DESSERTS,
     description: "Expertly double-baked pure buttermilk rusk. Perfectly block-cut, crunchy, dry, and ready for hot coffee or tea dunking.",
-    image: "./images/rusks_pack.png",
+    image: "/images/rusks_pack.png",
     isBucket: false,
     basePrice: 20,
     badge: "Dunking Essential"
@@ -50,7 +50,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Piped Butter Biscuit with Cherry",
     category: Category.BAKERY_BUCKETS,
     description: "Traditional melt-in-the-mouth pure butter cookie, piped into a beautiful swirl and finished with a sweet glazed red cherry dome.",
-    image: "./images/biscuits_assorted.png",
+    image: "/images/biscuits_assorted.png",
     isBucket: false,
     basePrice: 10,
     badge: "Heritage Swirl",
@@ -61,7 +61,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Dipped Belgian Chocolate Butter Biscuit",
     category: Category.BAKERY_BUCKETS,
     description: "Our classic piped shortbread biscuit, generously hand-dipped in rich, melted premium Belgian dark chocolate.",
-    image: "./images/biscuits_assorted.png",
+    image: "/images/biscuits_assorted.png",
     isBucket: false,
     basePrice: 12,
     badge: "Choc Indulgence",
@@ -72,7 +72,7 @@ const SMALL_TREATS_ITEMS: MenuItem[] = [
     name: "Nems Signature Single Pastel Macaron",
     category: Category.DESSERTS,
     description: "A single piece of our award-winning delicate almond macaron with choice white chocolate and crushed strawberry cream filling.",
-    image: "./images/gourmet_macarons.png",
+    image: "/images/gourmet_macarons.png",
     isBucket: false,
     basePrice: 18,
     badge: "Logo Signature",
@@ -350,7 +350,7 @@ export default function DailyTreats({
                 <div className="space-y-4">
                   <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-stone-100 border border-gold/40 relative">
                     <img
-                      src="https://images.unsplash.com/photo-1607958996333-41aef7caefaa?auto=format&fit=crop&q=80&w=600"
+                      src="/images/morning_muffins.png"
                       alt="Artisanal Soft Muffins"
                       referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
@@ -577,7 +577,7 @@ export default function DailyTreats({
                       <div className="absolute inset-0 bg-stone-900/85 backdrop-blur-xs flex flex-col items-center justify-center text-center p-3 z-10 select-none coming-soon-banner">
                         <div className="mb-1.5 h-10 w-10 overflow-hidden rounded-full border border-gold bg-white flex items-center justify-center shadow-md animate-pulse">
                           <img 
-                            src="./images/logo.png" 
+                            src="/images/logo.png" 
                             alt="Nems Logo" 
                             className="h-full w-full object-cover" 
                             onError={handleLogoError}

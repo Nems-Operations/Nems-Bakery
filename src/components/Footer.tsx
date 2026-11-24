@@ -23,7 +23,7 @@ export default function Footer({ onPartnershipClick }: FooterProps) {
             <div className="flex items-center space-x-3">
               <div className="relative h-11 w-11 overflow-hidden rounded-full border border-[#D4AF37] bg-white flex items-center justify-center">
                 <img 
-                  src="./images/logo.png" 
+                  src="/images/logo.png" 
                   alt="Nems logo" 
                   referrerPolicy="no-referrer"
                   className="h-full w-full object-cover"
